@@ -1,0 +1,401 @@
+{
+    "traffic_profiles": {
+        "Low": {
+            "network_packet_size": {
+                "mean": 283.99,
+                "std": 97.72
+            },
+            "login_attempts": {
+                "mean": 4.05,
+                "std": 1.98
+            },
+            "session_duration": {
+                "mean": 781.89,
+                "std": 766.36
+            },
+            "ip_reputation_score": {
+                "mean": 0.33,
+                "std": 0.17
+            },
+            "failed_logins": {
+                "mean": 1.54,
+                "std": 1.06
+            },
+            "unusual_time_access": {
+                "mean": 0.15,
+                "std": 0.36
+            }
+        },
+        "Medium": {
+            "network_packet_size": {
+                "mean": 499.69,
+                "std": 49.0
+            },
+            "login_attempts": {
+                "mean": 4.03,
+                "std": 1.96
+            },
+            "session_duration": {
+                "mean": 782.39,
+                "std": 772.13
+            },
+            "ip_reputation_score": {
+                "mean": 0.33,
+                "std": 0.18
+            },
+            "failed_logins": {
+                "mean": 1.5,
+                "std": 1.02
+            },
+            "unusual_time_access": {
+                "mean": 0.14,
+                "std": 0.35
+            }
+        },
+        "High": {
+            "network_packet_size": {
+                "mean": 718.91,
+                "std": 107.17
+            },
+            "login_attempts": {
+                "mean": 4.02,
+                "std": 1.96
+            },
+            "session_duration": {
+                "mean": 814.04,
+                "std": 820.05
+            },
+            "ip_reputation_score": {
+                "mean": 0.33,
+                "std": 0.18
+            },
+            "failed_logins": {
+                "mean": 1.52,
+                "std": 1.03
+            },
+            "unusual_time_access": {
+                "mean": 0.16,
+                "std": 0.36
+            }
+        }
+    },
+    "role_profiles": {
+        "Admin": {
+            "session_duration": {
+                "mean": 1500,
+                "std": 200
+            },
+            "login_attempts": {
+                "mean": 2,
+                "std": 1
+            },
+            "failed_logins": {
+                "mean": 0.5,
+                "std": 0.5
+            },
+            "ip_reputation_score": {
+                "mean": 0.2,
+                "std": 0.1
+            },
+            "unusual_time_access": {
+                "mean": 0.05,
+                "std": 0.1
+            },
+            "network_packet_size": {
+                "mean": 1000,
+                "std": 100
+            }
+        },
+        "Viewer": {
+            "session_duration": {
+                "mean": 300,
+                "std": 100
+            },
+            "login_attempts": {
+                "mean": 1,
+                "std": 0.5
+            },
+            "failed_logins": {
+                "mean": 0.3,
+                "std": 0.3
+            },
+            "ip_reputation_score": {
+                "mean": 0.1,
+                "std": 0.05
+            },
+            "unusual_time_access": {
+                "mean": 0.2,
+                "std": 0.3
+            },
+            "network_packet_size": {
+                "mean": 200,
+                "std": 50
+            }
+        },
+        "Staff": {
+            "session_duration": {
+                "mean": 800,
+                "std": 150
+            },
+            "login_attempts": {
+                "mean": 4,
+                "std": 1
+            },
+            "failed_logins": {
+                "mean": 2,
+                "std": 1
+            },
+            "ip_reputation_score": {
+                "mean": 0.4,
+                "std": 0.15
+            },
+            "unusual_time_access": {
+                "mean": 0.1,
+                "std": 0.2
+            },
+            "network_packet_size": {
+                "mean": 600,
+                "std": 80
+            }
+        }
+    },
+
+    "role-traffic":{
+        "Admin-Low": {
+            "network_packet_size": {
+                "mean": 286.5278846153846,
+                "std": 97.04918328492808
+            },
+            "login_attempts": {
+                "mean": 4.033653846153846,
+                "std": 1.995138971181182
+            },
+            "session_duration": {
+                "mean": 783.2872073150966,
+                "std": 786.1546723119884
+            },
+            "ip_reputation_score": {
+                "mean": 0.32274279581057663,
+                "std": 0.17392689004631284
+            },
+            "failed_logins": {
+                "mean": 1.5240384615384615,
+                "std": 1.0453614663105337
+            },
+            "unusual_time_access": {
+                "mean": 0.14903846153846154,
+                "std": 0.3562977181611356
+            }
+        },
+        "Admin-Medium": {
+            "network_packet_size": {
+                "mean": 499.51708217913205,
+                "std": 49.142183410684915
+            },
+            "login_attempts": {
+                "mean": 4.105263157894737,
+                "std": 2.0119789138365083
+            },
+            "session_duration": {
+                "mean": 803.1343230696555,
+                "std": 804.052515948773
+            },
+            "ip_reputation_score": {
+                "mean": 0.3299054318346592,
+                "std": 0.18149577009258594
+            },
+            "failed_logins": {
+                "mean": 1.4875346260387812,
+                "std": 1.002115008033874
+            },
+            "unusual_time_access": {
+                "mean": 0.1458910433979686,
+                "std": 0.35316003496804826
+            }
+        },
+        "Admin-High": {
+            "network_packet_size": {
+                "mean": 718.8719851576994,
+                "std": 109.24781372659425
+            },
+            "login_attempts": {
+                "mean": 4.01113172541744,
+                "std": 1.947277798803997
+            },
+            "session_duration": {
+                "mean": 823.9859739870576,
+                "std": 860.6380852350862
+            },
+            "ip_reputation_score": {
+                "mean": 0.33050326555493753,
+                "std": 0.17908844472909394
+            },
+            "failed_logins": {
+                "mean": 1.4795918367346939,
+                "std": 1.0284039524086686
+            },
+            "unusual_time_access": {
+                "mean": 0.16048237476808905,
+                "std": 0.3672231986008527
+            }
+        },
+        "Viewer-Low": {
+            "network_packet_size": {
+                "mean": 282.08504923903314,
+                "std": 98.18451888863505
+            },
+            "login_attempts": {
+                "mean": 4.0841539838854075,
+                "std": 1.948275941628007
+            },
+            "session_duration": {
+                "mean": 758.3703363376475,
+                "std": 693.5123251373161
+            },
+            "ip_reputation_score": {
+                "mean": 0.3333998045878505,
+                "std": 0.17218752050261388
+            },
+            "failed_logins": {
+                "mean": 1.5264100268576544,
+                "std": 1.0500345207705155
+            },
+            "unusual_time_access": {
+                "mean": 0.1665174574753805,
+                "std": 0.37271135894608387
+            }
+        },
+        "Viewer-Medium": {
+            "network_packet_size": {
+                "mean": 499.8160152526215,
+                "std": 49.011405150944164
+            },
+            "login_attempts": {
+                "mean": 3.9122974261201144,
+                "std": 1.8900935402361985
+            },
+            "session_duration": {
+                "mean": 772.2735248007418,
+                "std": 780.5503742715204
+            },
+            "ip_reputation_score": {
+                "mean": 0.33414379237643965,
+                "std": 0.17943169210594062
+            },
+            "failed_logins": {
+                "mean": 1.4756911344137273,
+                "std": 0.9940808232417397
+            },
+            "unusual_time_access": {
+                "mean": 0.1325071496663489,
+                "std": 0.33920302050347495
+            }
+        },
+        "Viewer-High": {
+            "network_packet_size": {
+                "mean": 718.3711240310078,
+                "std": 106.00685728737459
+            },
+            "login_attempts": {
+                "mean": 3.98546511627907,
+                "std": 1.9260786154577274
+            },
+            "session_duration": {
+                "mean": 824.8603523499144,
+                "std": 840.078121082895
+            },
+            "ip_reputation_score": {
+                "mean": 0.3459639369620475,
+                "std": 0.1790376799985565
+            },
+            "failed_logins": {
+                "mean": 1.5135658914728682,
+                "std": 1.0215002363203358
+            },
+            "unusual_time_access": {
+                "mean": 0.16085271317829458,
+                "std": 0.3675731742406422
+            }
+        },
+        "Staff-Low": {
+            "network_packet_size": {
+                "mean": 283.50048402710553,
+                "std": 97.93923251317301
+            },
+            "login_attempts": {
+                "mean": 4.030977734753146,
+                "std": 1.9915053888079401
+            },
+            "session_duration": {
+                "mean": 805.9277414728781,
+                "std": 819.3460707314456
+            },
+            "ip_reputation_score": {
+                "mean": 0.33397734544607266,
+                "std": 0.17550569231173122
+            },
+            "failed_logins": {
+                "mean": 1.5614714424007745,
+                "std": 1.0730790315503576
+            },
+            "unusual_time_access": {
+                "mean": 0.1442400774443369,
+                "std": 0.3515031791358787
+            }
+        },
+        "Staff-Medium": {
+            "network_packet_size": {
+                "mean": 499.74233716475095,
+                "std": 48.88193544986092
+            },
+            "login_attempts": {
+                "mean": 4.066091954022989,
+                "std": 1.9564872682065373
+            },
+            "session_duration": {
+                "mean": 771.0213434884516,
+                "std": 728.9102185454593
+            },
+            "ip_reputation_score": {
+                "mean": 0.3240727824597428,
+                "std": 0.1783071603669787
+            },
+            "failed_logins": {
+                "mean": 1.524904214559387,
+                "std": 1.050203144491285
+            },
+            "unusual_time_access": {
+                "mean": 0.14367816091954022,
+                "std": 0.3509312031717982
+            }
+        },
+        "Staff-High": {
+            "network_packet_size": {
+                "mean": 719.4674835061263,
+                "std": 106.25014152346162
+            },
+            "login_attempts": {
+                "mean": 4.053722902921772,
+                "std": 1.997153114030224
+            },
+            "session_duration": {
+                "mean": 793.4042153815831,
+                "std": 755.9364619175913
+            },
+            "ip_reputation_score": {
+                "mean": 0.3274817238869831,
+                "std": 0.1751341261925342
+            },
+            "failed_logins": {
+                "mean": 1.5683317624882187,
+                "std": 1.039001673968363
+            },
+            "unusual_time_access": {
+                "mean": 0.14514608859566447,
+                "std": 0.35241418379497036
+            }
+        }
+    }
+
+
+}

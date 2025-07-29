@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Masquerade Detection Form</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="bg-light">
+  {% include 'navbar.html' %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container mt-2">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+  <div class="container py-5">
+    <div class="card shadow">
+      <div class="card-body">
+        <h1 class="card-title mb-4">Masquerade Session Prediction</h1>
+
+      {% if profile_guide %}
+<div class="alert alert-info mb-4">
+  <h5 class="mb-2">📘 Traffic Profile Guide (Mean ± Std)</h5>
+  <table class="table table-sm table-bordered mb-0">
+    <thead>
+      <tr>
+        <th>Profile</th>
+        <th>Packet Size</th>
+        <th>Login Attempts</th>
+        <th>Session Duration</th>
+        <th>IP Reputation</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for profile, values in profile_guide.items() %}
+      <tr>
+        <td><strong>{{ profile }}</strong></td>
+        <td>{{ values.network_packet_size }}</td>
+        <td>{{ values.login_attempts }}</td>
+        <td>{{ values.session_duration }}</td>
+        <td>{{ values.ip_reputation_score }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+
+<!-- <form method="POST">
+  <input type="hidden" name="selected_profile" value="{{ selected_profile }}">
+
+  <div class="mb-3">
+    <label for="userRole" class="form-label">Select User Role</label>
+    <select class="form-select" name="user_role" id="userRole" required>
+      <option value="Admin" {% if form_data.user_role == "Admin" %}selected{% endif %}>Admin</option>
+      <option value="Viewer" {% if form_data.user_role == "Viewer" %}selected{% endif %}>Viewer</option>
+      <option value="Staff" {% if form_data.user_role == "Staff" %}selected{% endif %}>Staff</option>
+    </select>
+  </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Prefill with Traffic Profile</label>
+      <select class="form-select" name="profile" onchange="this.form.submit()">
+        <option value="Low" {% if selected_profile == 'Low' %}selected{% endif %}>Low</option>
+        <option value="Medium" {% if selected_profile == 'Medium' %}selected{% endif %}>Medium</option>
+        <option value="High" {% if selected_profile == 'High' %}selected{% endif %}>High</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+  <div class="col-md-6">
+    <label for="selected_profile" class="form-label">Traffic Profile</label>
+    <select name="selected_profile" id="selected_profile" class="form-select">
+      <option value="Low" {% if selected_profile == 'Low' %}selected{% endif %}>Low</option>
+      <option value="Medium" {% if selected_profile == 'Medium' %}selected{% endif %}>Medium</option>
+      <option value="High" {% if selected_profile == 'High' %}selected{% endif %}>High</option>
+    </select>
+  </div>
+  <div class="col-md-6">
+    <label for="user_role" class="form-label">User Role</label>
+    <select name="user_role" id="user_role" class="form-select">
+      <option value="Admin" {% if form_data.user_role == 'Admin' %}selected{% endif %}>Admin</option>
+      <option value="Viewer" {% if form_data.user_role == 'Viewer' %}selected{% endif %}>Viewer</option>
+      <option value="Staff" {% if form_data.user_role == 'Staff' %}selected{% endif %}>Staff</option>
+    </select>
+  </div>
+</div> -->
+
+<!-- </form>
+
+
+    <form method="POST"> -->
+    <!-- <input type="hidden" name="selected_profile" value="{{ selected_profile }}"> -->
+
+<form method="POST" action="/submit?profile={{ selected_profile }}&role={{ form_data.user_role }}">
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <label for="selected_profile" class="form-label">Traffic Profile</label>
+      <select name="selected_profile" id="selected_profile" class="form-select">
+        <option value="Low" {% if selected_profile == '-' %}selected{% endif %}>-</option>
+        <option value="Low" {% if selected_profile == 'Low' %}selected{% endif %}>Low</option>
+        <option value="Medium" {% if selected_profile == 'Medium' %}selected{% endif %}>Medium</option>
+        <option value="High" {% if selected_profile == 'High' %}selected{% endif %}>High</option>
+      </select>
+    </div>
+    <div class="col-md-6">
+      <label for="user_role" class="form-label">User Role</label>
+      <select name="user_role" id="user_role" class="form-select">
+        <option value="Admin" {% if form_data.user_role == '-' %}selected{% endif %}>-</option>
+        <option value="Admin" {% if form_data.user_role == 'Admin' %}selected{% endif %}>Admin</option>
+        <option value="Viewer" {% if form_data.user_role == 'Viewer' %}selected{% endif %}>Viewer</option>
+        <!-- <option value="Staff" {% if form_data.user_role == 'Staff' %}selected{% endif %}>Staff</option> -->
+      </select>
+    </div>
+  </div>
+    <div class="row g-3">
+        <!-- Numeric inputs -->
+        <div class="col-md-6">
+        <label class="form-label">Network Packet Size</label>
+        <!-- <input class="form-control" type="number" name="network_packet_size" min="0" required> -->
+        <input class="form-control" type="number" name="network_packet_size" min="0" step="0.01" required value="{{ form_data.network_packet_size }}">
+        </div>
+        <div class="col-md-6">
+        <label class="form-label">Login Attempts</label>
+        <!-- <input class="form-control" type="number" name="login_attempts" min="0" required> -->
+        <input class="form-control" type="number" name="login_attempts" min="0" required value="{{ form_data.login_attempts }}">
+        </div>
+        <div class="col-md-6">
+        <label class="form-label">Session Duration</label>
+        <!-- <input class="form-control" type="number" name="session_duration" min="0" step="0.01" required> -->
+        <input class="form-control" type="number" name="session_duration" min="0" step="0.01" required value="{{ form_data.session_duration }}">
+        </div>
+        <div class="col-md-6">
+        <label class="form-label">IP Reputation Score</label>
+        <!-- <input class="form-control" type="number" name="ip_reputation_score" min="0" max="1" step="0.01" required> -->
+        <input class="form-control" type="number" name="ip_reputation_score" min="0" step="0.01" required value="{{ form_data.ip_reputation_score }}">
+        </div>
+        <div class="col-md-6">
+        <label class="form-label">Failed Logins</label>
+        <!-- <input class="form-control" type="number" name="failed_logins" min="0" required> -->
+        <input class="form-control" type="number" name="failed_logins" min="0" required value="{{ form_data.failed_logins }}">
+        </div>
+
+        <!-- Binary dropdowns -->
+        <div class="col-md-6">
+        <!-- <label class="form-label">Unusual Time Access</label>
+        <select class="form-select" name="unusual_time_access" required>
+            <option value="0" {% if form_data.unusual_time_access == 0 %}selected{% endif %}>0 (No)</option>
+            <option value="1" {% if form_data.unusual_time_access == 1 %}selected{% endif %}>1 (Yes)</option>
+            <option value="0">0 (No)</option>
+            <option value="1">1 (Yes)</option> 
+            </select> --> 
+  <label for="access_time" class="form-label">Access Time</label>
+<input type="time" class="form-control" id="access_time" name="access_time" value="{{ form_data.access_time }}">
+</div>
+
+
+
+        <div class="col-md-6">
+        <label class="form-label">Protocol TCP</label>
+        <select class="form-select" name="protocol_type_TCP" required>
+            <!-- <option value="0">0 (No)</option>
+            <option value="1">1 (Yes)</option> -->
+            <option value="0" {% if form_data.protocol_type_TCP == 0 %}selected{% endif %}>0 (No)</option>
+            <option value="1" {% if form_data.protocol_type_TCP == 1 %}selected{% endif %}>1 (Yes)</option>
+        </select>
+        </div>
+
+        <div class="col-md-6">
+        <label class="form-label">Protocol ICMP</label>
+        <select class="form-select" name="protocol_type_ICMP" required>
+            <option value="0" {% if form_data.protocol_type_TCP == 0 %}selected{% endif %}>0 (No)</option>
+            <option value="1" {% if form_data.protocol_type_TCP == 1 %}selected{% endif %}>1 (Yes)</option>
+            <!-- <option value="0">0 (No)</option>
+            <option value="1">1 (Yes)</option> -->
+        </select>
+        </div>
+
+        <div class="col-md-6">
+        <label class="form-label">Protocol UDP</label>
+        <select class="form-select" name="protocol_type_UDP" required>
+            <option value="0" {% if form_data.protocol_type_UDP == 0 %}selected{% endif %}>0 (No)</option>
+            <option value="1" {% if form_data.protocol_type_UDP == 1 %}selected{% endif %}>1 (Yes)</option>
+            <!-- <option value="0">0 (No)</option>
+            <option value="1">1 (Yes)</option> -->
+        </select>
+        </div>
+
+        <div class="col-md-6">
+        <label class="form-label">Encryption AES</label>
+        <select class="form-select" name="encryption_used_AES" required>
+            <option value="0" {% if form_data.encryption_used_AES == 0 %}selected{% endif %}>0 (No)</option>
+            <option value="1" {% if form_data.encryption_used_AES == 1 %}selected{% endif %}>1 (Yes)</option>
+            <!-- <option value="0">0 (No)</option>
+            <option value="1">1 (Yes)</option> -->
+        </select>
+        </div>
+
+        <div class="col-md-6">
+        <label class="form-label">Encryption DES</label>
+        <select class="form-select" name="encryption_used_DES" required>
+            <option value="0" {% if form_data.encryption_used_DES == 0 %}selected{% endif %}>0 (No)</option>
+            <option value="1" {% if form_data.encryption_used_DES == 1 %}selected{% endif %}>1 (Yes)</option>
+            <!-- <option value="0">0 (No)</option>
+            <option value="1">1 (Yes)</option> -->
+        </select>
+        </div>
+
+        <div class="col-md-6">
+        <label class="form-label">Browser Chrome</label>
+        <select class="form-select" name="browser_type_Chrome" required>
+            <option value="0" {% if form_data.browser_type_Chrome == 0 %}selected{% endif %}>0 (No)</option>
+            <option value="1" {% if form_data.browser_type_Chrome == 1 %}selected{% endif %}>1 (Yes)</option>
+            <!-- <option value="0">0 (No)</option>
+            <option value="1">1 (Yes)</option> -->
+        </select>
+        </div>
+
+        <div class="col-md-6">
+        <label class="form-label">Browser Firefox</label>
+        <select class="form-select" name="browser_type_Firefox" required>
+            <option value="0" {% if form_data.browser_type_Firefox == 0 %}selected{% endif %}>0 (No)</option>
+            <option value="1" {% if form_data.browser_type_Firefox == 1 %}selected{% endif %}>1 (Yes)</option>
+            <!-- <option value="0">0 (No)</option>
+            <option value="1">1 (Yes)</option> -->
+        </select>
+        </div>
+
+        <div class="col-md-6">
+        <label class="form-label">Browser Safari</label>
+        <select class="form-select" name="browser_type_Safari" required>
+            <option value="0" {% if form_data.browser_type_Safari == 0 %}selected{% endif %}>0 (No)</option>
+            <option value="1" {% if form_data.browser_type_Safari == 1 %}selected{% endif %}>1 (Yes)</option>
+            <!-- <option value="0">0 (No)</option>
+            <option value="1">1 (Yes)</option> -->
+        </select>
+        </div>
+
+        <div class="col-md-6">
+        <label class="form-label">Browser Edge</label>
+        <select class="form-select" name="browser_type_Edge" required>
+            <option value="0" {% if form_data.browser_type_Edge == 0 %}selected{% endif %}>0 (No)</option>
+            <option value="1" {% if form_data.browser_type_Edge == 1 %}selected{% endif %}>1 (Yes)</option>
+            <!-- <option value="0">0 (No)</option>
+            <option value="1">1 (Yes)</option> -->
+        </select>
+        </div>
+
+        <div class="col-md-6">
+        <label class="form-label">Browser Unknown</label>
+        <select class="form-select" name="browser_type_Unknown" required>
+            <option value="0" {% if form_data.browser_type_Unknown == 0 %}selected{% endif %}>0 (No)</option>
+            <option value="1" {% if form_data.browser_type_Unknown == 1 %}selected{% endif %}>1 (Yes)</option>
+            <!-- <option value="0">0 (No)</option>
+            <option value="1">1 (Yes)</option> -->
+        </select>
+        </div>
+    </div>
+
+  <div class="mt-4">
+    <button class="btn btn-primary" type="submit">Predict</button>
+<form method="POST" action="/submit?profile={{ selected_profile }}&role={{ form_data.user_role }}">
+<a href="/submit?profile=High&role=Admin&fail=5&time=02:30" class="btn btn-outline-secondary">Simulate Admin-High</a>
+<a href="/submit?profile=Low&role=Viewer&fail=0&time=01:00" class="btn btn-outline-secondary">Simulate Viewer-Low</a>
+<!-- <a href="/submit?profile=Medium&role=Staff&fail=3&time=23:00" class="btn btn-outline-secondary">Simulate Staff-Medium</a> -->
+</form>
+
+
+
+  </div>
+</form>
+
+
+        {% if result %}
+        <div class="alert mt-4 {% if result.anomaly == 1 %}alert-danger{% else %}alert-success{% endif %}">
+          <h5 class="alert-heading">
+            {% if result.anomaly == 1 %}
+              ⚠️ Anomaly Detected!
+            {% else %}
+              ✅ Session is Normal
+            {% endif %}
+          </h5>
+          <hr />
+        <p class="mb-0"><strong>Server Message:</strong> {{ result.message or "N/A" }}</p>
+        <p class="mb-0"><strong>Explanation:</strong> {{ result.explanation or "N/A" }}</p>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

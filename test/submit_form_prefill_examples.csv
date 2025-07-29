@@ -1,0 +1,4 @@
+,network_packet_size,login_attempts,session_duration,ip_reputation_score,failed_logins,unusual_time_access,protocol_type_TCP,protocol_type_UDP,protocol_type_ICMP,encryption_used_AES,encryption_used_DES,browser_type_Chrome,browser_type_Edge,browser_type_Firefox,browser_type_Safari,browser_type_Unknown,risk_score
+Low,276.05,3.2,870.73,0.04,0.3,0.22,1,0,0,1,0,1,0,0,0,0,0.14600000000000002
+Medium,500.85,2.73,1030.71,0.32,4.39,0.0,1,0,0,1,0,1,0,0,0,0,1.038
+High,537.46,1.96,1961.43,0.28,3.21,0.35,1,0,0,1,0,1,0,0,0,0,0.887

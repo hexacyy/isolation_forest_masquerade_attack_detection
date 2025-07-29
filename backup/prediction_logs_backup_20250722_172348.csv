@@ -1,0 +1,34 @@
+id,timestamp,anomaly,explanation,network_packet_size,login_attempts,session_duration,ip_reputation_score,failed_logins,unusual_time_access,protocol_type_ICMP,protocol_type_TCP,protocol_type_UDP,encryption_used_AES,encryption_used_DES,browser_type_Chrome,browser_type_Edge,browser_type_Firefox,browser_type_Safari,browser_type_Unknown,risk_score,anomaly_score,profile_used,user_role,log_month
+1,2025-07-22T06:32:05.207551,0,Session deviated from expected behaviour for Admin during Unknown traffic. | Role: Admin,986,2,1636.19,0.14,1,0,1,1,0,1,0,1,0,0,0,0,0.27,0.019,Unknown,Admin,2025-07
+2,2025-07-22T06:33:41.999987,1,Access occurred outside normal hours (9AM to 5PM) | Session deviated from expected behaviour for Viewer during Unknown traffic. | Role: Viewer,186,1,361.91,0.07,0,1,1,1,0,1,0,1,0,0,0,0,0.33499999999999996,-0.0079,Unknown,Viewer,2025-07
+3,2025-07-22T06:46:15.207253,0,Session deviated from expected behaviour for Staff during Staff-Medium traffic. | Role: Staff,669,5,600.64,0.62,2,0,1,1,0,1,0,1,0,0,0,0,0.71,0.0697,Staff-Medium,Staff,2025-07
+4,2025-07-22T06:46:29.818848,0,Session deviated from expected behaviour for Viewer during Viewer-Low traffic. | Role: Viewer,174,1,366.19,0.09,0,0,1,1,0,1,0,1,0,0,0,0,0.045,0.0191,Viewer-Low,Viewer,2025-07
+5,2025-07-22T06:57:08.067460,1,Multiple Failed Logins | Overall High Risk Score | Access occurred outside normal hours (9AM to 5PM) | Session deviated from expected behaviour for Admin during Admin-High traffic. | Role: Admin,999,3,1475.53,0.33,5,1,1,1,0,1,0,1,0,0,0,0,1.465,-0.06,Admin-High,Admin,2025-07
+6,2025-07-22T06:57:21.526037,1,Access occurred outside normal hours (9AM to 5PM) | Session deviated from expected behaviour for Viewer during Viewer-Low traffic. | Role: Viewer,229,1,229.6,0.08,0,1,1,1,0,1,0,1,0,0,0,0,0.33999999999999997,-0.0069,Viewer-Low,Viewer,2025-07
+7,2025-07-22T06:57:38.390677,0,Session deviated from expected behaviour for Viewer during Viewer-Low traffic. | Role: Viewer,159,2,389.09,0.11,0,0,1,1,0,1,0,1,0,0,0,0,0.055,0.0345,Viewer-Low,Viewer,2025-07
+8,2025-07-22T06:58:14.084191,1,Session deviated from expected behaviour for Staff during Staff-Medium traffic. | Role: Staff | Overridden due to high calculated risk score,537,6,740.85,0.78,3,0,1,1,0,1,0,1,0,0,0,0,0.9900000000000001,0.0121,Staff-Medium,Staff,2025-07
+9,2025-07-22T10:01:54.425828,1,Multiple Failed Logins | Overall High Risk Score | Access occurred outside normal hours (9AM to 5PM) | Session deviated from expected behaviour for Admin during Admin-High traffic. | Role: Admin,1075,0,1223.09,0.05,5,1,1,1,0,1,0,1,0,0,0,0,1.325,-0.0782,Admin-High,Admin,2025-07
+10,2025-05-15T17:14:00,1,Synthetic entry,795,3,54.97,0.93,5,0,0,1,0,1,0,1,0,0,0,0,0.38,0.92,Synthetic,viewer,2025-05
+11,2025-05-21T19:31:00,0,Synthetic entry,556,4,20.7,0.8,0,0,0,1,0,1,0,1,0,0,0,0,0.74,0.2,Synthetic,viewer,2025-05
+12,2025-05-12T11:52:00,1,Synthetic entry,568,4,36.95,0.55,0,0,0,1,0,1,0,1,0,0,0,0,0.04,0.5,Synthetic,viewer,2025-05
+13,2025-05-18T13:11:00,0,Synthetic entry,1685,1,30.17,0.65,0,0,0,1,0,1,0,1,0,0,0,0,0.9,0.3,Synthetic,viewer,2025-05
+14,2025-05-05T04:30:00,0,Synthetic entry,748,5,46.37,0.34,3,1,0,1,0,1,0,1,0,0,0,0,0.81,0.96,Synthetic,viewer,2025-05
+15,2025-05-05T07:48:00,1,Synthetic entry,1718,1,54.36,0.58,1,1,0,1,0,1,0,1,0,0,0,0,0.92,0.96,Synthetic,viewer,2025-05
+16,2025-05-02T15:22:00,0,Synthetic entry,1653,1,22.09,0.05,0,0,0,1,0,1,0,1,0,0,0,0,0.6,0.67,Synthetic,viewer,2025-05
+17,2025-05-23T20:37:00,0,Synthetic entry,1409,3,42.01,0.3,3,1,0,1,0,1,0,1,0,0,0,0,0.63,0.59,Synthetic,viewer,2025-05
+18,2025-05-19T01:49:00,0,Synthetic entry,989,5,24.58,0.28,1,0,0,1,0,1,0,1,0,0,0,0,0.99,0.62,Synthetic,viewer,2025-05
+19,2025-05-07T15:30:00,1,Synthetic entry,634,10,56.22,0.38,1,1,0,1,0,1,0,1,0,0,0,0,0.06,0.61,Synthetic,viewer,2025-05
+20,2025-06-26T02:43:00,0,Synthetic entry,1183,4,52.67,0.7,1,1,0,1,0,1,0,1,0,0,0,0,0.82,0.79,Synthetic,viewer,2025-06
+21,2025-06-21T09:23:00,1,Synthetic entry,1384,9,10.64,0.09,2,0,0,1,0,1,0,1,0,0,0,0,0.72,0.85,Synthetic,viewer,2025-06
+22,2025-06-02T03:52:00,0,Synthetic entry,1921,6,57.39,0.07,0,0,0,1,0,1,0,1,0,0,0,0,0.24,0.04,Synthetic,viewer,2025-06
+23,2025-06-02T01:24:00,1,Synthetic entry,485,9,32.8,0.3,2,1,0,1,0,1,0,1,0,0,0,0,0.14,0.85,Synthetic,viewer,2025-06
+24,2025-06-15T00:19:00,1,Synthetic entry,647,5,17.18,0.95,3,0,0,1,0,1,0,1,0,0,0,0,0.44,0.49,Synthetic,viewer,2025-06
+25,2025-06-05T00:14:00,0,Synthetic entry,638,4,48.12,0.57,2,1,0,1,0,1,0,1,0,0,0,0,0.14,0.97,Synthetic,viewer,2025-06
+26,2025-06-19T10:34:00,0,Synthetic entry,1474,3,41.27,0.71,2,1,0,1,0,1,0,1,0,0,0,0,0.27,0.95,Synthetic,viewer,2025-06
+27,2025-06-01T06:39:00,0,Synthetic entry,217,8,50.84,0.47,5,1,0,1,0,1,0,1,0,0,0,0,0.79,0.55,Synthetic,viewer,2025-06
+28,2025-06-23T11:27:00,1,Synthetic entry,559,8,44.2,0.64,2,1,0,1,0,1,0,1,0,0,0,0,0.71,0.93,Synthetic,viewer,2025-06
+29,2025-06-14T05:52:00,0,Synthetic entry,1855,10,28.37,0.57,5,1,0,1,0,1,0,1,0,0,0,0,0.82,0.38,Synthetic,viewer,2025-06
+30,2025-07-22T17:18:28.754606,1,Multiple Failed Logins | Overall High Risk Score | Access occurred outside normal hours (9AM to 5PM) | Session deviated from expected behaviour for Admin during Admin-High traffic. | Role: Admin,1055,1,1440.58,0.07,5,1,1,1,0,1,0,1,0,0,0,0,1.335,-0.076,Admin-High,Admin,2025-07
+31,2025-07-22T17:18:32.855198,0,Access occurred outside normal hours (9AM to 5PM) | Session deviated from expected behaviour for Viewer during Viewer-Low traffic. | Role: Viewer,217,2,468.58,0.08,0,1,1,1,0,1,0,1,0,0,0,0,0.33999999999999997,0.0015,Viewer-Low,Viewer,2025-07
+32,2025-07-22T17:18:43.789067,0,Access occurred outside normal hours (9AM to 5PM) | Session deviated from expected behaviour for Viewer during Viewer-Low traffic. | Role: Viewer,217,2,468.58,0.08,0,1,1,1,0,1,0,1,0,0,0,0,0.33999999999999997,0.0015,Viewer-Low,Viewer,2025-07
+33,2025-07-22T17:23:09.675166,1,Multiple Failed Logins | Overall High Risk Score | Access occurred outside normal hours (9AM to 5PM) | Session deviated from expected behaviour for Admin during Admin-High traffic. | Role: Admin,1023,2,1495.36,0.12,5,1,1,1,0,1,0,1,0,0,0,0,1.36,-0.0646,Admin-High,Admin,2025-07

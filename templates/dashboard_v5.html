@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Masquerade Detection Dashboard</title>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- DataTables CSS -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
+    <style>
+    .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+    }
+    </style>
+    <style>
+  tfoot select, tfoot input {
+    width: 100%;
+    padding: 2px;
+    font-size: 0.875rem;
+  }
+</style>
+</head>
+<body class="bg-light">
+  {% include 'navbar.html' %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container mt-2">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% endwith %}
+
+  <div class="container py-4">
+    <h1 class="mb-4">Masquerade Detection Dashboard</h1>
+    <p><strong>Total sessions:</strong> {{ summary.total }}</p>
+    <p><strong>Anomalies detected:</strong> {{ summary.anomalies }}</p>
+    <p><strong>Anomaly rate:</strong> {{ "%.2f" % summary.anomaly_rate }}%</p>
+
+    <div id="alert-container" class="my-3"></div>
+
+    {% if session.get('role') == 'admin' %}
+    <div class="d-flex justify-content-end mb-4">
+      <button class="btn btn-outline-primary" onclick="refreshSummary()">
+        🔄 Generate/Refresh Summary
+      </button>
+    </div>
+    {% endif %}
+
+<!-- FILTER FORM -->
+<form id="filterForm" class="row g-3 mb-4" method="get" action="{{ url_for('dashboard.dashboard') }}">
+  <div class="col-md-3">
+    <label class="form-label">Start Date</label>
+    <input type="date" class="form-control" name="start_date" value="{{ start_date }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">End Date</label>
+    <input type="date" class="form-control" name="end_date" value="{{ end_date }}">
+  </div>
+
+  <div class="col-md-3 d-flex align-items-end">
+    <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+  </div>
+  <div class="col-md-3 d-flex align-items-end">
+    <button type="button" class="btn btn-primary w-100" onclick="clearAllFilters()">Clear Filters</button>
+  </div>
+</form>
+
+  <p><strong>Last Updated:</strong> {{ summary.last_updated or "N/A" }}</p>
+
+  <h2>Recent Predictions</h2>
+  {% if summary.df_tail %}
+<table id="predictionsTable" class="table table-bordered table-hover table-sm align-middle" style="width:100%">
+  <thead class="table-light">
+    <tr>
+      {% for col in summary.df_tail[0].keys() %}
+      <th class="text-nowrap">{{ col }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+
+<tfoot>
+  <tr>
+    {% for col in summary.df_tail[0].keys() %}
+    <th>
+      {% if col in ['anomaly', 'unusual_time_access', 'protocol_type_ICMP', 'protocol_type_TCP', 'protocol_type_UDP', 
+                    'encryption_used_AES', 'encryption_used_DES', 'browser_type_Chrome', 'browser_type_Edge', 
+                    'browser_type_Firefox', 'browser_type_Safari', 'browser_type_Unknown'] %}
+        <select class="form-select form-select-sm">
+          <option value="">All</option>
+          <option value="1">1</option>
+          <option value="0">0</option>
+        </select>
+      {% else %}
+        <input type="text" placeholder="Search {{ col }}" class="form-control form-control-sm" />
+      {% endif %}
+    </th>
+    {% endfor %}
+  </tr>
+</tfoot>
+
+
+<tbody>
+  {% for row in summary.df_tail %}
+    <tr class="{% if row.anomaly == 1 %}table-danger{% elif row.anomaly_score is defined and row.anomaly_score is not none and row.anomaly_score < -0.5 %}table-warning{% else %}table-success{% endif %}">
+      {% for value in row.values() %}
+        <td class="text-nowrap">{{ value }}</td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+</tbody>
+
+  </tbody>
+</table>
+  {% else %}
+  <p class="text-muted">No recent predictions to display.</p>
+  {% endif %}
+
+
+
+<!-- ADMIN CLEAR LOG BUTTON -->
+  {% if session.get('role') == 'admin' %}
+  <div class="row mt-4 mb-3">
+    <div class="col-md-6 text-end">
+      <form method="post" action="{{ url_for('admin.clear_predictions') }}" onsubmit="return handleClearLogs(event);">
+        <button class="btn btn-danger w-100">🧹 Clear Prediction Logs</button>
+      </form>
+    </div>
+    <div class="col-md-6 text-start">
+      <form method="get" action="{{ url_for('admin.restore_backup') }}">
+        <button class="btn btn-outline-dark w-100">🗂️ Restore Backup</button>
+      </form>
+    </div>
+  </div>
+
+<!-- Moved Download Button -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <a href="/download/log" class="btn btn-success w-100" download>📥 Download Log CSV</a>
+    </div>
+  </div>
+  {% endif %}
+
+
+
+    <div class="mt-3 mb-4">
+<h5>Prediction Row Legend</h5>
+<ul class="list-unstyled">
+  <li><span class="badge bg-danger">&nbsp;&nbsp;</span> Anomaly Detected (anomaly = 1)</li>
+  <li><span class="badge bg-warning text-dark">&nbsp;&nbsp;</span> Suspicious Behavior (anomaly_score < -0.5)</li>
+  <li><span class="badge bg-success">&nbsp;&nbsp;</span> Normal</li>
+</ul>
+
+
+    <h2 class="mt-5">Anomaly Visualizations</h2>
+
+    <div class="row">
+      <!-- Timeline chart -->
+      <div class="col-md-12 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body" style="overflow-x: auto;">
+            <div id="timelineChart"></div>
+            <p class="card-text text-center">Anomaly Timeline</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pie chart -->
+      <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body" style="overflow-x: auto;">
+            <div id="pieChart"></div>
+            <p class="card-text text-center">Anomaly vs Normal Pie Chart</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Failed Logins -->
+      <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body" style="overflow-x: auto;">
+            <div id="failedLoginsChart"></div>
+            <p class="card-text text-center">Failed Logins Distribution</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- IP Reputation -->
+      <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body" style="overflow-x: auto;">
+            <div id="ipReputationChart"></div>
+            <p class="card-text text-center">IP Reputation Scores Distribution</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Session Duration -->
+      <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body" style="overflow-x: auto;">
+            <div id="sessionDurationChart"></div>
+            <p class="card-text text-center">Session Durations Distribution</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <br>
+    <!-- <a href="/download/log" class="btn btn-success" download>📥 Download Log CSV</a> -->
+  </div>
+
+  <script>
+    function refreshSummary() {
+      fetch('/generate_summary')
+        .then(response => response.json())
+        .then(data => {
+          if (data.message) {
+            showAlert("✅ " + data.message, "success");
+          } else if (data.error) {
+            showAlert("❌ Error: " + data.error, "danger");
+          }
+          setTimeout(() => window.location.reload(), 1500);
+        })
+        .catch(err => {
+          showAlert("❌ Unexpected error: " + err, "danger");
+        });
+    }
+
+    function showAlert(message, type) {
+      const alertHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>`;
+      document.getElementById("alert-container").innerHTML = alertHTML;
+    }
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const recentData = {{ summary.df_tail | tojson | safe }};
+      const timestamps = recentData.map(row => row.timestamp);
+      const anomalyFlags = recentData.map(row => row.anomaly);
+      const riskScores = recentData.map(row => row.risk_score);
+      const failedLogins = recentData.map(row => row.failed_logins);
+      const ipReputationScores = recentData.map(row => row.ip_reputation_score);
+      const sessionDurations = recentData.map(row => row.session_duration);
+
+      Plotly.newPlot('timelineChart', [{
+        x: timestamps,
+        y: anomalyFlags,
+        type: 'scatter',
+        mode: 'lines+markers',
+        text: riskScores.map(risk => `Risk Score: ${risk.toFixed(2)}`),
+        hoverinfo: 'x+y+text',
+        marker: { color: 'red' },
+        line: { shape: 'hv' },
+        name: 'Anomaly Flag'
+      }], {
+        title: 'Anomaly Timeline',
+        height: 400,
+        xaxis: { title: 'Timestamp' },
+        yaxis: { title: 'Anomaly (0=Normal, 1=Anomaly)', tickvals: [0, 1] }
+      }, { responsive: true });
+
+      const anomalyCount = anomalyFlags.filter(f => f === 1).length;
+      const normalCount = anomalyFlags.length - anomalyCount;
+      Plotly.newPlot('pieChart', [{
+        values: [normalCount, anomalyCount],
+        labels: ['Normal', 'Anomaly'],
+        type: 'pie',
+        hole: 0.4
+      }], {
+        title: 'Normal vs Anomaly Distribution',
+        height: 300
+      }, { responsive: true });
+
+      Plotly.newPlot('failedLoginsChart', [{
+        x: failedLogins,
+        type: 'histogram',
+        hovertemplate: 'Failed Logins: %{x}<br>Count: %{y}<extra></extra>'
+      }], {
+        title: 'Failed Logins Distribution',
+        height: 300,
+        xaxis: { title: 'Failed Logins' },
+        yaxis: { title: 'Count' }
+      }, { responsive: true });
+
+      Plotly.newPlot('ipReputationChart', [{
+        x: ipReputationScores,
+        type: 'histogram',
+        hovertemplate: 'IP Reputation: %{x:.2f}<br>Count: %{y}<extra></extra>'
+      }], {
+        title: 'IP Reputation Scores',
+        height: 300,
+        xaxis: { title: 'IP Reputation Score' },
+        yaxis: { title: 'Count' }
+      }, { responsive: true });
+
+      Plotly.newPlot('sessionDurationChart', [{
+        x: sessionDurations,
+        type: 'histogram',
+        hovertemplate: 'Session Duration: %{x} sec<br>Count: %{y}<extra></extra>'
+      }], {
+        title: 'Session Durations',
+        height: 300,
+        xaxis: { title: 'Session Duration (seconds)' },
+        yaxis: { title: 'Count' }
+      }, { responsive: true });
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- jQuery and DataTables JS -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const dt = new DataTable("#predictionsTable", {
+    scrollX: true,
+    scrollCollapse: true,
+    paging: true,
+    pageLength: 10,
+    order: [[0, 'asc']],
+    initComplete: function () {
+      this.api().columns().every(function () {
+        let column = this;
+        const footer = column.footer();
+        if (!footer) return;
+
+        const input = footer.querySelector('input');
+        const select = footer.querySelector('select');
+
+        if (input) {
+          input.addEventListener('keyup', function () {
+            column.search(this.value).draw();
+          });
+        }
+
+        if (select) {
+          // Get unique values and cast numeric where possible
+          let values = [];
+          column.data().unique().each(function (d) {
+            const num = parseFloat(d);
+            values.push(isNaN(num) ? d : num);
+          });
+
+          // Sort numerically if possible
+          values.sort((a, b) => (typeof a === 'number' && typeof b === 'number') ? a - b : a.toString().localeCompare(b.toString()));
+
+          // Populate select dropdown
+          values.forEach(function (val) {
+            if (select.querySelector(`option[value="${val}"]`)) return;
+            const option = document.createElement("option");
+            option.value = val;
+            option.text = val;
+            select.appendChild(option);
+          });
+
+          // Filter logic
+          select.addEventListener('change', function () {
+            const val = this.value;
+            column.search(val ? `^${val}$` : '', true, false).draw(); // exact match
+          });
+        }
+      });
+    }
+
+  });
+});
+
+</script>
+
+<script>
+  setInterval(() => {
+    fetch('/generate_summary')
+      .then(() => window.location.reload());
+  }, 60000);  // refresh every 60 seconds
+</script>
+
+<script>
+function clearAllFilters() {
+  // Clear DataTables search + redraw
+  const table = $('#predictionsTable').DataTable();
+  table.search('').columns().search('').draw();
+
+  // Clear all column input/select filters
+  $('#predictionsTable tfoot input').val('');
+  $('#predictionsTable tfoot select').val('');
+
+  // Clear HTML form filters (date, checkbox)
+  document.querySelector('[name="start_date"]').value = '';
+  document.querySelector('[name="end_date"]').value = '';
+  document.querySelector('[name="only_anomalies"]').checked = false;
+  document.querySelector('#filterForm').submit();
+
+
+  // Submit form with cleared filters
+  document.querySelector('form[method="get"]').submit();
+}
+</script>
+
+<script>
+  function handleClearLogs(event) {
+    const isAzure = {{ 'true' if is_azure else 'false' }};
+    if (isAzure) {
+      event.preventDefault();
+      const confirmed = confirm("This system is hosted on Azure.\n\nDo you want to download logs before clearing?");
+      if (confirmed) {
+        window.location.href = "/download/log";
+        setTimeout(() => {
+          event.target.submit();
+        }, 1000);
+      } else {
+        event.target.submit();
+      }
+      return false;
+    } else {
+      return confirm("Clear all prediction logs?");
+    }
+  }
+</script>
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+id,timestamp,anomaly,explanation,network_packet_size,login_attempts,session_duration,ip_reputation_score,failed_logins,unusual_time_access,protocol_type_ICMP,protocol_type_TCP,protocol_type_UDP,encryption_used_AES,encryption_used_DES,browser_type_Chrome,browser_type_Edge,browser_type_Firefox,browser_type_Safari,browser_type_Unknown,risk_score,anomaly_score,profile_used
+1,2025-07-21T20:42:51.824883,0,No major risk indicators,526,4,1697.82,0.57,3,0,1,1,0,1,0,1,0,0,0,0,0.885,0.0465,Medium
+2,2025-07-18T09:50:36.919843,0,No major risk indicators,950,15,350.0,0.2,1,0,0,0,0,0,0,1,0,0,0,0,0.3,,
+3,2025-07-18T09:52:15.386043,0,Unusual Access Time,400,2,300.0,0.1,0,1,0,0,0,0,0,0,0,0,0,0,0.35,,
+4,2025-07-18T09:52:17.114494,0,Unusual Access Time,400,2,300.0,0.8,1,1,0,0,0,0,0,0,0,0,0,0,0.9000000000000001,,
+5,2025-07-18T09:52:18.865504,1,High IP Reputation Score | Multiple Failed Logins | Unusual Access Time | Overall High Risk Score,400,2,300.0,0.95,12,1,0,0,0,0,0,0,0,0,0,0,3.1750000000000003,,
+6,2025-07-18T09:52:20.404269,0,Unusual Access Time,500,1,1000.0,0.1,0,1,0,1,0,1,0,1,0,0,0,0,0.35,,
+7,2025-07-18T09:52:20.416996,0,Unusual Access Time,500,1,1000.0,0.8,1,1,0,1,0,1,0,1,0,0,0,0,0.9000000000000001,,
+8,2025-07-18T09:52:20.428374,1,High IP Reputation Score | Multiple Failed Logins | Unusual Access Time | Overall High Risk Score,500,1,1000.0,0.95,12,1,0,1,0,1,0,1,0,0,0,0,3.1750000000000003,,
+9,2025-07-21T20:47:34.221110,0,No major risk indicators,808,3,392.65,0.2,1,0,1,1,0,1,0,1,0,0,0,0,0.30000000000000004,0.0743,High
+10,2025-07-21T20:47:43.832380,0,No major risk indicators,535,3,1176.57,0.43,2,0,1,1,0,1,0,1,0,0,0,0,0.615,0.0875,Medium
+11,2025-07-21T20:47:52.605189,0,network_packet_size is below normal (431.44 < 450.7) | ip_reputation_score is below normal (0.07 < 0.1),431,4,1049.83,0.07,1,0,1,1,0,1,0,1,0,0,0,0,0.23500000000000001,0.0797,Medium
+12,2025-07-21T20:48:01.665771,0,network_packet_size is below normal (603.61 < 611.7) | failed_logins is below normal (0.0 < 0.5) | Unusual Access Time,603,3,0.0,0.5,0,1,1,1,0,1,0,1,0,0,0,0,0.55,0.0133,High

@@ -1,0 +1,40 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/dashboard">Masquerade Prototype</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="/dashboard">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if active_page == 'submit' %}active{% endif %}" href="/submit">Submit Session</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if active_page == 'report' %}active{% endif %}" href="/report">Static Report</a>
+        </li>
+        {% if session.get('role') == 'admin' %}
+        <li class="nav-item">
+          <a class="nav-link {% if active_page == 'manage_users' %}active{% endif %}" href="{{ url_for('admin.manage_users') }}">Manage Users</a>
+        </li>
+        {% endif %}
+        {% if session.get('username') %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+            data-bs-toggle="dropdown" aria-expanded="false">
+            {{ session['username'] }} ({{ session['role'] }})
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+            <li>
+              <a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a>
+            </li>
+          </ul>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>

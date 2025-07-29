@@ -1,0 +1,7 @@
+id,timestamp,anomaly,explanation,network_packet_size,login_attempts,session_duration,ip_reputation_score,failed_logins,unusual_time_access,protocol_type_TCP,protocol_type_ICMP,protocol_type_UDP,encryption_used_AES,encryption_used_DES,browser_type_Chrome,browser_type_Firefox,browser_type_Safari,browser_type_Edge,browser_type_Unknown,risk_score
+2,2025-07-18T12:03:39.252854,0,Unusual Access Time,400,2,300.0,0.1,0,1,0,0,0,0,0,0,0,0,0,0,0.35
+3,2025-07-18T12:03:41.033926,0,Unusual Access Time,400,2,300.0,0.8,1,1,0,0,0,0,0,0,0,0,0,0,0.9000000000000001
+4,2025-07-18T12:03:42.743047,1,High IP Reputation Score | Multiple Failed Logins | Unusual Access Time | Overall High Risk Score,400,2,300.0,0.95,12,1,0,0,0,0,0,0,0,0,0,0,3.1750000000000003
+5,2025-07-18T12:03:44.216128,0,Unusual Access Time,500,1,1000.0,0.1,0,1,1,0,0,1,0,1,0,0,0,0,0.35
+6,2025-07-18T12:03:44.237827,0,Unusual Access Time,500,1,1000.0,0.8,1,1,1,0,0,1,0,1,0,0,0,0,0.9000000000000001
+7,2025-07-18T12:03:44.257219,1,High IP Reputation Score | Multiple Failed Logins | Unusual Access Time | Overall High Risk Score,500,1,1000.0,0.95,12,1,1,0,0,1,0,1,0,0,0,0,3.1750000000000003
