@@ -3,8 +3,6 @@ from dotenv import load_dotenv
 import os
 from logging_config import setup_logging
 
-
-
 # Load environment variables and setup logging
 load_dotenv("webhook.env")
 setup_logging()
@@ -18,13 +16,15 @@ def create_app():
     from routes.prediction import prediction_bp
     from routes.dashboard import dashboard_bp
     from routes.admin import admin_bp
-    from routes.data_feeds import data_feeds_bp  # ADD THIS LINE
-
+    from routes.data_feeds import data_feeds_bp
+    from routes.ml_performance import ml_performance_bp  # ADD THIS LINE
+    
     app.register_blueprint(auth_bp)
     app.register_blueprint(prediction_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(admin_bp)
-    app.register_blueprint(data_feeds_bp)  # ADD THIS LINE
+    app.register_blueprint(data_feeds_bp)
+    app.register_blueprint(ml_performance_bp)  # ADD THIS LINE
     
     # Context processor for template variables
     @app.context_processor

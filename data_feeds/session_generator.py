@@ -384,12 +384,34 @@ class DataFeedSimulator:
                 anomaly_detected = result.get('anomaly', 0)
                 risk_score = result.get('risk_score', 0)
                 
-                status = "🚨 ATTACK" if anomaly_detected else "✅ NORMAL"
-                print(f"[{source}] {status} | User: {session_data['username']} | IP: {session_data['source_ip']} | Risk: {risk_score:.2f}")
+                # Enhanced logging with behavioral analysis results
+                behavioral_info = result.get('behavioral_analysis', {})
+                profile_used = behavioral_info.get('profile_used', 'Unknown')
+                risk_level = behavioral_info.get('risk_level', 'UNKNOWN')
+                deviation_score = behavioral_info.get('deviation_score', 0)
                 
-                # Log high-risk detections
+                status = "🚨 ATTACK" if anomaly_detected else "✅ NORMAL"
+                
+                # Enhanced console output
+                user_info = session_data.get('username', 'Unknown')
+                ip_info = session_data.get('source_ip', 'Unknown')
+                
+                print(f"[{source}] {status} | User: {user_info} | IP: {ip_info}")
+                print(f"         Risk: {risk_score:.2f} | Profile: {profile_used} | Behavioral: {risk_level} ({deviation_score:.2f}σ)")
+                
+                # Log high-risk detections with behavioral context
                 if anomaly_detected:
-                    self._log_security_alert(session_data, result, source)
+                    enhanced_result = {
+                        **result,
+                        'source_feed': source,
+                        'session_context': {
+                            'username': user_info,
+                            'source_ip': ip_info,
+                            'user_role': session_data.get('user_role', 'Unknown'),
+                            'data_source': session_data.get('data_source', source.lower())
+                        }
+                    }
+                    self._log_security_alert(session_data, enhanced_result, source)
                     
             else:
                 print(f"[{source}_ERROR] API returned {response.status_code}: {response.text}")
@@ -400,74 +422,108 @@ class DataFeedSimulator:
             print(f"[{source}_ERROR] Unexpected error: {e}")
     
     def _format_for_api(self, session_data):
-        """Convert session data to API format"""
-        # Map browser types to one-hot encoding
-        browser_mapping = {
-            'Chrome': {'browser_type_Chrome': 1, 'browser_type_Firefox': 0, 'browser_type_Safari': 0, 'browser_type_Edge': 0, 'browser_type_Unknown': 0},
-            'Firefox': {'browser_type_Chrome': 0, 'browser_type_Firefox': 1, 'browser_type_Safari': 0, 'browser_type_Edge': 0, 'browser_type_Unknown': 0},
-            'Safari': {'browser_type_Chrome': 0, 'browser_type_Firefox': 0, 'browser_type_Safari': 1, 'browser_type_Edge': 0, 'browser_type_Unknown': 0},
-            'Edge': {'browser_type_Chrome': 0, 'browser_type_Firefox': 0, 'browser_type_Safari': 0, 'browser_type_Edge': 1, 'browser_type_Unknown': 0},
-            'Unknown': {'browser_type_Chrome': 0, 'browser_type_Firefox': 0, 'browser_type_Safari': 0, 'browser_type_Edge': 0, 'browser_type_Unknown': 1}
-        }
-        
-        # Map protocol types
-        protocol_mapping = {
-            'TCP': {'protocol_type_TCP': 1, 'protocol_type_UDP': 0, 'protocol_type_ICMP': 0},
-            'UDP': {'protocol_type_TCP': 0, 'protocol_type_UDP': 1, 'protocol_type_ICMP': 0},
-            'ICMP': {'protocol_type_TCP': 0, 'protocol_type_UDP': 0, 'protocol_type_ICMP': 1}
-        }
-        
-        # Map encryption
-        encryption_mapping = {
-            'AES': {'encryption_used_AES': 1, 'encryption_used_DES': 0},
-            'DES': {'encryption_used_AES': 0, 'encryption_used_DES': 1},
-            'None': {'encryption_used_AES': 0, 'encryption_used_DES': 0}
-        }
-        
-        # Build API payload
-        payload = {
-            'network_packet_size': session_data['network_packet_size'],
-            'login_attempts': session_data['login_attempts'],
-            'session_duration': session_data['session_duration'],
-            'ip_reputation_score': session_data['ip_reputation_score'],
-            'failed_logins': session_data['failed_logins'],
-            'unusual_time_access': session_data['unusual_time_access'],
-            'user_role': session_data.get('user_role', 'Viewer'),
-            'profile_used': f"{session_data.get('user_role', 'Viewer')}-Medium"
-        }
-        
-        # Add one-hot encodings
-        payload.update(browser_mapping.get(session_data['browser_type'], browser_mapping['Unknown']))
-        payload.update(protocol_mapping.get(session_data['protocol_type'], protocol_mapping['TCP']))
-        payload.update(encryption_mapping.get(session_data['encryption_used'], encryption_mapping['AES']))
-        
-        return payload
+            """Convert session data to API format for enhanced behavioral analysis"""
+            # Map browser types to one-hot encoding
+            browser_mapping = {
+                'Chrome': {'browser_type_Chrome': 1, 'browser_type_Firefox': 0, 'browser_type_Safari': 0, 'browser_type_Edge': 0, 'browser_type_Unknown': 0},
+                'Firefox': {'browser_type_Chrome': 0, 'browser_type_Firefox': 1, 'browser_type_Safari': 0, 'browser_type_Edge': 0, 'browser_type_Unknown': 0},
+                'Safari': {'browser_type_Chrome': 0, 'browser_type_Firefox': 0, 'browser_type_Safari': 1, 'browser_type_Edge': 0, 'browser_type_Unknown': 0},
+                'Edge': {'browser_type_Chrome': 0, 'browser_type_Firefox': 0, 'browser_type_Safari': 0, 'browser_type_Edge': 1, 'browser_type_Unknown': 0},
+                'Unknown': {'browser_type_Chrome': 0, 'browser_type_Firefox': 0, 'browser_type_Safari': 0, 'browser_type_Edge': 0, 'browser_type_Unknown': 1}
+            }
+            
+            # Map protocol types
+            protocol_mapping = {
+                'TCP': {'protocol_type_TCP': 1, 'protocol_type_UDP': 0, 'protocol_type_ICMP': 0},
+                'UDP': {'protocol_type_TCP': 0, 'protocol_type_UDP': 1, 'protocol_type_ICMP': 0},
+                'ICMP': {'protocol_type_TCP': 0, 'protocol_type_UDP': 0, 'protocol_type_ICMP': 1}
+            }
+            
+            # Map encryption
+            encryption_mapping = {
+                'AES': {'encryption_used_AES': 1, 'encryption_used_DES': 0},
+                'DES': {'encryption_used_AES': 0, 'encryption_used_DES': 1},
+                'None': {'encryption_used_AES': 0, 'encryption_used_DES': 0}
+            }
+            
+            # Build API payload with all required fields for behavioral analysis
+            payload = {
+                'network_packet_size': session_data['network_packet_size'],
+                'login_attempts': session_data['login_attempts'],
+                'session_duration': session_data['session_duration'],
+                'ip_reputation_score': session_data['ip_reputation_score'],
+                'failed_logins': session_data['failed_logins'],
+                'unusual_time_access': session_data['unusual_time_access'],
+                
+                # CRITICAL: Add user_role for behavioral analysis
+                'user_role': session_data.get('user_role', 'Viewer'),
+                
+                # Add profile hint (behavioral analyzer will override this)
+                'profile_used': f"{session_data.get('user_role', 'Viewer')}-Medium",
+                
+                # Optional: Add username and source IP for logging
+                'username': session_data.get('username', f"user_{hash(str(session_data)) % 1000}"),
+                'source_ip': session_data.get('source_ip', '192.168.1.100')
+            }
+            
+            # Add one-hot encodings
+            browser_type = session_data.get('browser_type', 'Chrome')
+            payload.update(browser_mapping.get(browser_type, browser_mapping['Chrome']))
+            
+            protocol_type = session_data.get('protocol_type', 'TCP')
+            payload.update(protocol_mapping.get(protocol_type, protocol_mapping['TCP']))
+            
+            encryption_used = session_data.get('encryption_used', 'AES')
+            payload.update(encryption_mapping.get(encryption_used, encryption_mapping['AES']))
+            
+            return payload
     
     def _log_security_alert(self, session_data, detection_result, source):
-        """Log security alerts to file"""
-        alert = {
-            'timestamp': datetime.now().isoformat(),
-            'source_feed': source,
-            'session_data': session_data,
-            'detection_result': detection_result,
-            'severity': 'HIGH' if detection_result.get('risk_score', 0) > 0.8 else 'MEDIUM'
-        }
-        
-        # Ensure alerts directory exists
-        os.makedirs('logs/security_alerts', exist_ok=True)
-        
-        # Write to daily alert log
-        date_str = datetime.now().strftime('%Y-%m-%d')
-        alert_file = f'logs/security_alerts/alerts_{date_str}.json'
-        
-        with open(alert_file, 'a') as f:
-            f.write(json.dumps(alert) + '\n')
+            """Log security alerts to file with behavioral analysis context"""
+            
+            behavioral_analysis = detection_result.get('behavioral_analysis', {})
+            
+            alert = {
+                'timestamp': datetime.now().isoformat(),
+                'source_feed': source,
+                'session_data': session_data,
+                'detection_result': detection_result,
+                'severity': 'HIGH' if detection_result.get('risk_score', 0) > 0.8 else 'MEDIUM',
+                
+                # Enhanced behavioral context
+                'behavioral_context': {
+                    'profile_used': behavioral_analysis.get('profile_used', 'Unknown'),
+                    'risk_level': behavioral_analysis.get('risk_level', 'UNKNOWN'),
+                    'deviation_score': behavioral_analysis.get('deviation_score', 0),
+                    'individual_deviations': behavioral_analysis.get('individual_deviations', {}),
+                    'analysis_success': behavioral_analysis.get('analysis_success', False)
+                },
+                
+                # Session context
+                'session_context': detection_result.get('session_context', {}),
+                
+                # Detection method details
+                'method_used': detection_result.get('detection_details', {}).get('method_used', 'Unknown'),
+                'confidence': detection_result.get('confidence', 'UNKNOWN')
+            }
+            
+            # Ensure alerts directory exists
+            os.makedirs('logs/security_alerts', exist_ok=True)
+            
+            # Write to daily alert log
+            date_str = datetime.now().strftime('%Y-%m-%d')
+            alert_file = f'logs/security_alerts/alerts_{date_str}.json'
+            
+            with open(alert_file, 'a') as f:
+                f.write(json.dumps(alert, indent=2) + '\n')
+            
+            print(f"[ALERT_LOGGED] {source} - {alert['severity']} - {behavioral_analysis.get('risk_level', 'UNKNOWN')}")
     
     def start_all_feeds(self):
         """Start all data feeds to simulate a real environment"""
         self.running = True
         
-        print("🚀 Starting Real-World Data Feed Simulation...")
+        print("Starting Real-World Data Feed Simulation...")
         print("=" * 60)
         
         # Start different data sources
@@ -491,3 +547,50 @@ class DataFeedSimulator:
                 print(f"   Stopping {feed_name} feed...")
         
         print("✅ All data feeds stopped.")
+
+        # Test function to verify data feeds integration
+    def test_data_feeds_integration():
+        """Test function to verify data feeds work with behavioral analysis"""
+        print("🧪 Testing Data Feeds Integration with Behavioral Analysis")
+        print("=" * 60)
+        
+        # Import required modules
+        import os
+        import sys
+        
+        # Add current directory to path
+        sys.path.append(os.getcwd())
+        
+        try:
+            from config import API_KEY
+        except ImportError:
+            print("❌ Could not import API_KEY from config")
+            return False
+        
+        # Test with sample data
+        test_simulator = DataFeedSimulator(API_KEY, "http://localhost:5000/predict")
+        
+        # Test legitimate session
+        print("\n🧪 Testing legitimate session...")
+        legitimate_session = test_simulator.session_generator.generate_legitimate_session()
+        if legitimate_session:
+            print("✅ Generated legitimate session")
+            test_simulator._send_to_detection_engine(legitimate_session, source="TEST")
+        else:
+            print("❌ Failed to generate legitimate session")
+        
+        # Test attack session
+        print("\n🧪 Testing attack session...")
+        attack_session = test_simulator.session_generator.generate_attack_session('external_attacker')
+        if attack_session:
+            print("✅ Generated attack session")
+            test_simulator._send_to_detection_engine(attack_session, source="TEST")
+        else:
+            print("❌ Failed to generate attack session")
+        
+        print("\n" + "=" * 60)
+        print("🧪 Integration test complete!")
+        print("Check your prediction database for new records with behavioral analysis")
+
+    if __name__ == "__main__":
+        test_data_feeds_integration()

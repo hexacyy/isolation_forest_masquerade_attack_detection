@@ -55,16 +55,55 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body class="bg-light">
-    {% include 'navbar.html' %}
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard">Masquerade Prototype</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/data-feeds">Data Feeds</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/submit">Submit Session</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/ml-performance">ML Performance</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/report">Static Report</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/api/debug-ml" target="_blank">🐛 Debug</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
     
     <div class="container-fluid py-4">
         <div class="row mb-4">
             <div class="col-md-12">
                 <h1 class="display-4 text-center mb-1">🤖 Machine Learning Performance Center</h1>
                 <p class="lead text-center text-muted">Real-time AI model performance, business impact, and security intelligence</p>
+                <div id="error-container"></div>
             </div>
         </div>
 
@@ -193,7 +232,7 @@
                         <div class="col-md-4">
                             <h6>⚡ Real-time Capabilities</h6>
                             <ul class="mb-0">
-                                <li><strong>Processing:</strong> <1 second per session</li>
+                                <li><strong>Processing:</strong> &lt;1 second per session</li>
                                 <li><strong>Scalability:</strong> 10K+ sessions/hour</li>
                                 <li><strong>Adaptability:</strong> Self-learning baselines</li>
                                 <li><strong>Explainability:</strong> Full decision transparency</li>
@@ -307,22 +346,49 @@
     <script>
         // Global variables for charts
         let performanceData = null;
+        let debugMode = true;
+
+        function showError(message) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.innerHTML = `<div class="error-message">⚠️ ${message}</div>`;
+        }
+
+        function logDebug(message) {
+            if (debugMode) {
+                console.log('[ML Performance]', message);
+            }
+        }
 
         // Load performance data
         async function loadPerformanceData() {
+            logDebug('Starting to load performance data...');
+            
             try {
                 const response = await fetch('/api/performance-metrics');
-                performanceData = await response.json();
+                logDebug('API response status:', response.status);
                 
-                if (performanceData.error) {
-                    console.log('Using demo data:', performanceData.error);
-                    performanceData = performanceData.metrics;
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                logDebug('API response data:', data);
+                
+                if (data.error) {
+                    logDebug('Using demo data due to:', data.error);
+                    showError(`Using demo data: ${data.error}`);
+                    performanceData = data.metrics;
+                } else {
+                    performanceData = data;
                 }
                 
                 updateDashboard();
                 createCharts();
+                
             } catch (error) {
                 console.error('Error loading performance data:', error);
+                showError(`Failed to load data: ${error.message}`);
+                
                 // Use fallback demo data
                 performanceData = getDemoData();
                 updateDashboard();
@@ -332,105 +398,144 @@
 
         // Update main dashboard metrics
         function updateDashboard() {
-            if (!performanceData) return;
+            if (!performanceData) {
+                logDebug('No performance data available for dashboard update');
+                return;
+            }
 
-            // Update main KPIs
-            document.getElementById('detection-rate').innerHTML = performanceData.overview.detection_rate + '%';
-            document.getElementById('cost-prevented').innerHTML = '$' + (performanceData.business_impact.cost_prevented / 1000).toFixed(0) + 'K';
-            document.getElementById('response-time').innerHTML = performanceData.business_impact.avg_response_time + 'min';
-            document.getElementById('accuracy-score').innerHTML = performanceData.overview.accuracy_estimate + '%';
+            logDebug('Updating dashboard with data:', performanceData);
+
+            // Update main KPIs with safe property access
+            const detectionRate = performanceData.overview?.detection_rate || 0;
+            const costPrevented = performanceData.business_impact?.cost_prevented || 0;
+            const responseTime = performanceData.business_impact?.avg_response_time || 0;
+            const accuracy = performanceData.overview?.accuracy_estimate || 0;
+
+            document.getElementById('detection-rate').innerHTML = detectionRate + '%';
+            document.getElementById('cost-prevented').innerHTML = '$' + Math.round(costPrevented / 1000) + 'K';
+            document.getElementById('response-time').innerHTML = responseTime + 'min';
+            document.getElementById('accuracy-score').innerHTML = accuracy + '%';
 
             // Update business metrics
-            document.getElementById('incidents-prevented').innerHTML = performanceData.overview.anomalies_detected;
+            const incidentsKPI = performanceData.overview?.anomalies_detected || 0;
+            const roiKPI = performanceData.business_impact?.roi_monthly || 0;
+            
+            document.getElementById('incidents-prevented').innerHTML = incidentsKPI;
             document.getElementById('analyst-hours').innerHTML = '124h';
-            document.getElementById('roi-monthly').innerHTML = '$' + (performanceData.business_impact.roi_monthly / 1000).toFixed(0) + 'K';
+            document.getElementById('roi-monthly').innerHTML = '$' + Math.round(roiKPI / 1000) + 'K';
 
             // Update temporal analysis
-            const peakHours = performanceData.temporal_analysis.peak_hours;
-            const peakHourText = peakHours.map(h => 
-                h < 12 ? h + ' AM' : (h === 12 ? '12 PM' : (h - 12) + ' PM')
-            ).join(', ');
-            document.getElementById('peak-hours').innerHTML = peakHourText;
+            if (performanceData.temporal_analysis?.peak_hours) {
+                const peakHours = performanceData.temporal_analysis.peak_hours;
+                const peakHourText = peakHours.map(h => {
+                    if (h < 12) return h + ' AM';
+                    if (h === 12) return '12 PM';
+                    return (h - 12) + ' PM';
+                }).join(', ');
+                document.getElementById('peak-hours').innerHTML = peakHourText;
+            }
             
-            document.getElementById('off-hours-attacks').innerHTML = performanceData.temporal_analysis.off_hours_attacks;
-            document.getElementById('business-hours-attacks').innerHTML = performanceData.temporal_analysis.business_hours_attacks;
+            const offHours = performanceData.temporal_analysis?.off_hours_attacks || 0;
+            const businessHours = performanceData.temporal_analysis?.business_hours_attacks || 0;
+            
+            document.getElementById('off-hours-attacks').innerHTML = offHours;
+            document.getElementById('business-hours-attacks').innerHTML = businessHours;
         }
 
         // Create performance charts
         async function createCharts() {
-            // 1. Performance Timeline
-            const timelineResponse = await fetch('/api/performance-timeline');
-            const timelineData = await timelineResponse.json();
+            logDebug('Creating charts...');
             
-            const timelineChart = {
-                data: [
-                    {
-                        x: timelineData.dates,
-                        y: timelineData.detection_rate,
-                        name: 'Detection Rate',
-                        type: 'scatter',
-                        mode: 'lines+markers',
-                        line: { color: '#28a745', width: 3 }
-                    },
-                    {
-                        x: timelineData.dates,
-                        y: timelineData.false_positive_rate,
-                        name: 'False Positive Rate',
-                        type: 'scatter',
-                        mode: 'lines+markers',
-                        line: { color: '#dc3545', width: 3 },
-                        yaxis: 'y2'
-                    }
-                ],
-                layout: {
-                    title: 'Model Performance Over Time',
-                    xaxis: { title: 'Date' },
-                    yaxis: { title: 'Detection Rate (%)', side: 'left' },
-                    yaxis2: { title: 'False Positive Rate (%)', side: 'right', overlaying: 'y' },
-                    hovermode: 'x unified',
-                    showlegend: true
+            // 1. Performance Timeline
+            try {
+                const timelineResponse = await fetch('/api/performance-timeline');
+                
+                if (!timelineResponse.ok) {
+                    throw new Error(`Timeline API failed: ${timelineResponse.status}`);
                 }
-            };
-            Plotly.newPlot('performance-timeline', timelineChart.data, timelineChart.layout);
+                
+                const timelineData = await timelineResponse.json();
+                logDebug('Timeline data received:', timelineData);
+                
+                const timelineChart = {
+                    data: [
+                        {
+                            x: timelineData.dates || [],
+                            y: timelineData.detection_rate || [],
+                            name: 'Detection Rate',
+                            type: 'scatter',
+                            mode: 'lines+markers',
+                            line: { color: '#28a745', width: 3 }
+                        },
+                        {
+                            x: timelineData.dates || [],
+                            y: timelineData.false_positive_rate || [],
+                            name: 'False Positive Rate',
+                            type: 'scatter',
+                            mode: 'lines+markers',
+                            line: { color: '#dc3545', width: 3 },
+                            yaxis: 'y2'
+                        }
+                    ],
+                    layout: {
+                        title: 'Model Performance Over Time',
+                        xaxis: { title: 'Date' },
+                        yaxis: { title: 'Detection Rate (%)', side: 'left' },
+                        yaxis2: { title: 'False Positive Rate (%)', side: 'right', overlaying: 'y' },
+                        hovermode: 'x unified',
+                        showlegend: true
+                    }
+                };
+                Plotly.newPlot('performance-timeline', timelineChart.data, timelineChart.layout);
+                
+            } catch (error) {
+                console.error('Error creating timeline chart:', error);
+                document.getElementById('performance-timeline').innerHTML = 
+                    '<div class="alert alert-warning">Timeline chart unavailable</div>';
+            }
 
             // 2. Detection Methods Pie Chart
-            const methodsChart = {
-                data: [{
-                    values: performanceData.detection_methods.values,
-                    labels: performanceData.detection_methods.labels,
-                    type: 'pie',
-                    marker: {
-                        colors: ['#007bff', '#28a745', '#ffc107']
-                    },
-                    textinfo: 'label+percent',
-                    hovertemplate: '<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<extra></extra>'
-                }],
-                layout: {
-                    title: 'Detection Methods Used',
-                    showlegend: true
-                }
-            };
-            Plotly.newPlot('detection-methods-chart', methodsChart.data, methodsChart.layout);
+            if (performanceData?.detection_methods) {
+                const methodsChart = {
+                    data: [{
+                        values: performanceData.detection_methods.values || [],
+                        labels: performanceData.detection_methods.labels || [],
+                        type: 'pie',
+                        marker: {
+                            colors: ['#007bff', '#28a745', '#ffc107']
+                        },
+                        textinfo: 'label+percent',
+                        hovertemplate: '<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<extra></extra>'
+                    }],
+                    layout: {
+                        title: 'Detection Methods Used',
+                        showlegend: true
+                    }
+                };
+                Plotly.newPlot('detection-methods-chart', methodsChart.data, methodsChart.layout);
+            }
 
             // 3. Risk Distribution Chart
-            const riskChart = {
-                data: [{
-                    x: performanceData.risk_distribution.labels,
-                    y: performanceData.risk_distribution.values,
-                    type: 'bar',
-                    marker: {
-                        color: ['#dc3545', '#ffc107', '#28a745']
-                    },
-                    text: performanceData.risk_distribution.values,
-                    textposition: 'auto'
-                }],
-                layout: {
-                    title: 'Session Risk Level Distribution',
-                    xaxis: { title: 'Risk Level' },
-                    yaxis: { title: 'Number of Sessions' }
-                }
-            };
-            Plotly.newPlot('risk-distribution-chart', riskChart.data, riskChart.layout);
+            if (performanceData?.risk_distribution) {
+                const riskChart = {
+                    data: [{
+                        x: performanceData.risk_distribution.labels || [],
+                        y: performanceData.risk_distribution.values || [],
+                        type: 'bar',
+                        marker: {
+                            color: ['#dc3545', '#ffc107', '#28a745']
+                        },
+                        text: performanceData.risk_distribution.values || [],
+                        textposition: 'auto'
+                    }],
+                    layout: {
+                        title: 'Session Risk Level Distribution',
+                        xaxis: { title: 'Risk Level' },
+                        yaxis: { title: 'Number of Sessions' }
+                    }
+                };
+                Plotly.newPlot('risk-distribution-chart', riskChart.data, riskChart.layout);
+            }
 
             // 4. Feature Importance Chart
             const featureChart = {
@@ -492,19 +597,25 @@
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
+            logDebug('Page loaded, initializing dashboard...');
             loadPerformanceData();
         });
 
-        // Add some interactive features
+        // Export functionality
         function exportPerformanceReport() {
+            if (!performanceData) {
+                alert('No data available to export');
+                return;
+            }
+            
             const reportData = {
                 timestamp: new Date().toISOString(),
                 metrics: performanceData,
                 summary: {
-                    total_sessions_analyzed: performanceData.overview.total_sessions,
-                    attacks_detected: performanceData.overview.anomalies_detected,
-                    detection_accuracy: performanceData.overview.accuracy_estimate,
-                    business_value: `${performanceData.business_impact.cost_prevented} in prevented losses`
+                    total_sessions_analyzed: performanceData.overview?.total_sessions || 0,
+                    attacks_detected: performanceData.overview?.anomalies_detected || 0,
+                    detection_accuracy: performanceData.overview?.accuracy_estimate || 0,
+                    business_value: `$${performanceData.business_impact?.cost_prevented || 0} in prevented losses`
                 }
             };
             
@@ -513,12 +624,14 @@
             const a = document.createElement('a');
             a.href = url;
             a.download = `ml_performance_report_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         // Add export button functionality
         document.addEventListener('DOMContentLoaded', function() {
-            // Add export button to navbar if it doesn't exist
             const navbar = document.querySelector('.navbar-nav');
             if (navbar && !document.getElementById('export-btn')) {
                 const exportLi = document.createElement('li');
@@ -530,6 +643,12 @@
                 `;
                 navbar.appendChild(exportLi);
             }
+        });
+
+        // Global error handler
+        window.addEventListener('error', function(e) {
+            console.error('JavaScript error:', e.error);
+            showError(`JavaScript error: ${e.message}`);
         });
     </script>
 </body>

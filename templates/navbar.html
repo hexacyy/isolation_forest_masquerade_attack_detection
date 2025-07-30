@@ -7,25 +7,35 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
+        <!-- Admin-only Data Feeds section -->
+        {% if session.get('role') == 'admin' %}
         <li class="nav-item">
           <a class="nav-link" href="/data-feeds">Data Feeds</a>
         </li>
+        {% endif %}
+        
+        <!-- General navigation items for all users -->
         <li class="nav-item">
           <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="/dashboard">Dashboard</a>
+        </li>
         <li class="nav-item">
           <a class="nav-link {% if active_page == 'submit' %}active{% endif %}" href="/submit">Submit Session</a>
         </li>
-        <li class="nav-item">
+        <!-- <li class="nav-item">
           <a class="nav-link" href="/ml-performance">ML Performance</a>
-        </li>
+        </li> -->
         <li class="nav-item">
           <a class="nav-link {% if active_page == 'report' %}active{% endif %}" href="/report">Static Report</a>
         </li>
+        
+        <!-- Admin-only Manage Users section -->
         {% if session.get('role') == 'admin' %}
         <li class="nav-item">
           <a class="nav-link {% if active_page == 'manage_users' %}active{% endif %}" href="{{ url_for('admin.manage_users') }}">Manage Users</a>
         </li>
         {% endif %}
+        
+        <!-- User dropdown menu -->
         {% if session.get('username') %}
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"

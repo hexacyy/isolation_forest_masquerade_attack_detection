@@ -1,4 +1,8 @@
-# REPLACE your entire routes/prediction.py with this clean version
+# routes/prediction.py
+"""
+Enhanced prediction endpoint with integrated behavioral analysis
+Combines ML model + rule-based detection + behavioral baselines
+"""
 
 from flask import Blueprint, request, jsonify, render_template, current_app
 import pandas as pd
@@ -10,6 +14,7 @@ from random import gauss, uniform, choice
 import numpy as np
 from config import model, scaler, expected_columns, baseline_stats
 from utils import require_api_key, login_required, get_monthly_db_path, send_telegram_alert
+from behavioral_analyzer import BehavioralAnalyzer
 
 prediction_bp = Blueprint('prediction', __name__)
 
@@ -41,134 +46,32 @@ def detect_obvious_attacks(data):
         attack_indicators.append("🕐 TIMING ATTACK: Access outside business hours")
         confidence_score += 0.2
     
-    # Check session behavior anomalies
-    session_duration = data.get('session_duration', 1800)
-    packet_size = data.get('network_packet_size', 500)
+    # Check session duration anomalies
+    duration = data.get('session_duration', 0)
+    if duration < 60:  # Very short sessions
+        attack_indicators.append("⚡ HIT-AND-RUN: Abnormally short session duration")
+        confidence_score += 0.3
     
-    if session_duration < 180:  # Very short session (< 3 minutes)
-        attack_indicators.append("⏱️ HIT-AND-RUN: Abnormally short session duration")
-        confidence_score += 0.1
-    
-    if packet_size < 100 or packet_size > 1400:  # Unusual packet sizes
-        attack_indicators.append("📊 TRAFFIC ANOMALY: Unusual network packet patterns")
-        confidence_score += 0.1
-    
-    # Calculate overall attack probability
-    attack_detected = confidence_score >= 0.4  # Lower threshold for rule-based detection
+    # Check packet size anomalies
+    packet_size = data.get('network_packet_size', 0)
+    if packet_size in [64, 128, 1400, 1500]:  # Known attack signatures
+        attack_indicators.append("📡 TRAFFIC ANOMALY: Unusual network packet patterns")
+        confidence_score += 0.2
     
     return {
-        'is_attack': attack_detected,
-        'indicators': attack_indicators,
-        'confidence': min(confidence_score, 1.0),
-        'rule_based': True
+        'is_attack': confidence_score >= 0.5,
+        'confidence_score': min(confidence_score, 1.0),
+        'indicators': attack_indicators
     }
-
-def ensure_database_logging(log_entry):
-    """Ensure prediction gets logged to the correct database that dashboard reads"""
-    databases_to_update = []
-    
-    # Add monthly database
-    current_month = datetime.now().strftime("%Y%m")
-    monthly_db = f"prediction_logs_{current_month}.db"
-    databases_to_update.append(monthly_db)
-    
-    # Add main database (in case dashboard reads from this)
-    main_db = "prediction_logs.db"
-    databases_to_update.append(main_db)
-    
-    # Update all relevant databases
-    for db_path in databases_to_update:
-        try:
-            with sqlite3.connect(db_path) as conn:
-                c = conn.cursor()
-                
-                # Create table if it doesn't exist
-                c.execute('''CREATE TABLE IF NOT EXISTS prediction_logs (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    timestamp TEXT,
-                    log_month TEXT,
-                    anomaly INTEGER,
-                    anomaly_score REAL,
-                    explanation TEXT,
-                    profile_used TEXT,
-                    user_role TEXT,
-                    confidence TEXT,
-                    business_impact TEXT,
-                    estimated_cost INTEGER,
-                    rule_based_detection INTEGER,
-                    ml_detection INTEGER,
-                    risk_score REAL,
-                    detection_method TEXT,
-                    network_packet_size REAL,
-                    login_attempts INTEGER,
-                    session_duration REAL,
-                    ip_reputation_score REAL,
-                    failed_logins INTEGER,
-                    unusual_time_access INTEGER,
-                    protocol_type_ICMP INTEGER,
-                    protocol_type_TCP INTEGER,
-                    protocol_type_UDP INTEGER,
-                    encryption_used_AES INTEGER,
-                    encryption_used_DES INTEGER,
-                    browser_type_Chrome INTEGER,
-                    browser_type_Edge INTEGER,
-                    browser_type_Firefox INTEGER,
-                    browser_type_Safari INTEGER,
-                    browser_type_Unknown INTEGER
-                )''')
-                
-                # Insert the log entry
-                columns = ', '.join(log_entry.keys())
-                placeholders = ', '.join('?' for _ in log_entry)
-                c.execute(f"INSERT INTO prediction_logs ({columns}) VALUES ({placeholders})", 
-                         tuple(log_entry.values()))
-                conn.commit()
-                print(f"[SUCCESS] Logged to {db_path}: Anomaly={log_entry.get('anomaly')}")
-                
-        except Exception as e:
-            print(f"[ERROR] Failed to log to {db_path}: {e}")
-
-def debug_database_issue():
-    """Debug function to check database files and connections"""
-    print("=== DATABASE DEBUG INFO ===")
-    
-    # Check what database files exist
-    db_files = [f for f in os.listdir('.') if f.endswith('.db')]
-    print(f"Database files found: {db_files}")
-    
-    # Check the current month database path
-    current_month = datetime.now().strftime("%Y%m")
-    monthly_db = f"prediction_logs_{current_month}.db"
-    print(f"Expected monthly DB: {monthly_db}")
-    
-    # Check if monthly DB exists and has data
-    if os.path.exists(monthly_db):
-        with sqlite3.connect(monthly_db) as conn:
-            c = conn.cursor()
-            try:
-                c.execute("SELECT COUNT(*) FROM prediction_logs")
-                count = c.fetchone()[0]
-                print(f"Records in {monthly_db}: {count}")
-                
-                if count > 0:
-                    c.execute("SELECT timestamp, anomaly, user_role, risk_score FROM prediction_logs ORDER BY timestamp DESC LIMIT 3")
-                    recent = c.fetchall()
-                    print("Recent records:")
-                    for record in recent:
-                        print(f"  - {record}")
-            except Exception as e:
-                print(f"Error reading {monthly_db}: {e}")
-    else:
-        print(f"Monthly DB {monthly_db} does not exist!")
 
 @prediction_bp.route('/predict', methods=['POST'])
 @require_api_key
 def predict():
-    """Enhanced prediction with rule-based attack detection"""
+    """Enhanced prediction with ML + Rules + Behavioral Analysis"""
     data = request.get_json(force=True)
     input_df = pd.DataFrame([data])
 
-    # Calculate risk score
+    # Calculate basic risk score
     input_df['risk_score'] = (
         input_df['ip_reputation_score'] * 0.5 +
         input_df['failed_logins'] * 0.2 +
@@ -184,31 +87,104 @@ def predict():
             input_df[col] = 0
     input_df = input_df[expected_columns]
 
-    # Get ML model prediction
+    # === STEP 1: ML MODEL PREDICTION ===
     scaled_input = scaler.transform(input_df)
     ml_prediction = model.predict(scaled_input)
     anomaly_score = model.decision_function(scaled_input)[0]
     ml_anomaly_flag = int(ml_prediction[0] == -1)
 
-    # Get rule-based detection
+    # === STEP 2: RULE-BASED DETECTION ===
     rule_detection = detect_obvious_attacks(data)
     
-    # COMBINE ML + RULES for final decision
-    final_anomaly_flag = ml_anomaly_flag or rule_detection['is_attack']
+    # === STEP 3: BEHAVIORAL ANALYSIS ===
+    try:
+        analyzer = BehavioralAnalyzer()
+        behavioral_score = analyzer.analyze_behavior(data)
+        behavioral_analysis_success = True
+    except Exception as e:
+        print(f"[WARNING] Behavioral analysis failed: {e}")
+        # Fallback behavioral score
+        behavioral_score = type('obj', (object,), {
+            'risk_level': 'UNKNOWN',
+            'overall_deviation': 0.0,
+            'individual_deviations': {},
+            'profile_used': 'Unknown',
+            'explanation': ['⚠️ Behavioral analysis unavailable']
+        })()
+        behavioral_analysis_success = False
     
-    # Risk score override (your existing logic)
+    # Map behavioral risk to numeric values for combination
+    behavioral_weights = {
+        'NORMAL': 0.0,
+        'LOW': 0.2, 
+        'MEDIUM': 0.5,
+        'HIGH': 0.8,
+        'CRITICAL': 1.0,
+        'UNKNOWN': 0.0
+    }
+    
+    behavioral_risk_score = behavioral_weights.get(behavioral_score.risk_level, 0.0)
+    
+    # === STEP 4: INTELLIGENT DECISION FUSION ===
+    # Weight different detection methods
+    ml_weight = 0.4
+    rule_weight = 0.3  
+    behavioral_weight = 0.3 if behavioral_analysis_success else 0.0
+    
+    # Adjust weights if behavioral analysis failed
+    if not behavioral_analysis_success:
+        ml_weight = 0.6
+        rule_weight = 0.4
+    
+    # Calculate composite confidence score
+    composite_confidence = (
+        ml_anomaly_flag * ml_weight +
+        rule_detection['confidence_score'] * rule_weight +
+        behavioral_risk_score * behavioral_weight
+    )
+    
+    # Final decision with enhanced logic
+    if behavioral_score.risk_level == 'CRITICAL':
+        final_anomaly_flag = 1
+        method_used = "Behavioral Analysis (Critical)"
+        confidence = "HIGH"
+    elif composite_confidence >= 0.7:
+        final_anomaly_flag = 1  
+        method_used = "Combined ML + Rules + Behavioral"
+        confidence = "HIGH"
+    elif composite_confidence >= 0.5:
+        final_anomaly_flag = 1
+        method_used = "Combined ML + Rules + Behavioral" 
+        confidence = "MEDIUM"
+    elif ml_anomaly_flag and behavioral_risk_score >= 0.5:
+        final_anomaly_flag = 1
+        method_used = "ML + Behavioral Confirmation"
+        confidence = "MEDIUM"
+    elif rule_detection['is_attack'] and behavioral_risk_score >= 0.2:
+        final_anomaly_flag = 1
+        method_used = "Rules + Behavioral Confirmation"
+        confidence = "MEDIUM"
+    else:
+        final_anomaly_flag = 0
+        method_used = "All Methods Agree (Normal)" if behavioral_analysis_success else "ML + Rules (Normal)"
+        confidence = "HIGH"
+    
+    # Risk score override (maintain existing logic)
     risk_score = float(input_df['risk_score'].iloc[0])
     if not final_anomaly_flag and risk_score >= 0.8:
         final_anomaly_flag = 1
-        override_reason = "High risk score override"
-    else:
-        override_reason = None
+        method_used = "High Risk Score Override"
+        confidence = "MEDIUM"
 
-    # Generate comprehensive explanation
+    # === STEP 5: GENERATE COMPREHENSIVE EXPLANATION ===
     explanation_parts = []
     
     if final_anomaly_flag:
         explanation_parts.append("🚨 MASQUERADE ATTACK DETECTED")
+        
+        # Add behavioral analysis details
+        if behavioral_score.risk_level in ['HIGH', 'CRITICAL'] and behavioral_analysis_success:
+            explanation_parts.extend(behavioral_score.explanation)
         
         # Add rule-based indicators
         if rule_detection['indicators']:
@@ -217,175 +193,174 @@ def predict():
         # Add ML reasoning
         if ml_anomaly_flag:
             explanation_parts.append(f"🤖 ML MODEL: Behavioral anomaly detected (score: {anomaly_score:.3f})")
-        
-        # Add override reasoning
-        if override_reason:
-            explanation_parts.append(f"📊 RISK OVERRIDE: {override_reason}")
-            
     else:
-        explanation_parts.append("✅ LEGITIMATE SESSION CONFIRMED")
-        explanation_parts.append("🔍 All security indicators within acceptable ranges")
-        explanation_parts.append(f"🤖 ML MODEL: Normal behavior pattern (score: {anomaly_score:.3f})")
-
-    explanation = " | ".join(explanation_parts)
-
-    # Determine confidence level
-    if rule_detection['confidence'] >= 0.7 or abs(anomaly_score) > 0.1:
-        confidence = "HIGH"
-    elif rule_detection['confidence'] >= 0.4 or abs(anomaly_score) > 0.05:
-        confidence = "MEDIUM"
-    else:
-        confidence = "LOW"
-
-    # Business impact assessment
-    if final_anomaly_flag:
-        if user_role == 'Admin':
-            business_impact = "🚨 CRITICAL: Admin account compromise - immediate response required"
-            estimated_cost = 50000  # $50K potential damage
+        # Normal session explanation
+        if behavioral_analysis_success:
+            explanation_parts.extend(behavioral_score.explanation)
         else:
-            business_impact = "⚠️ HIGH: User account breach - investigate immediately"
-            estimated_cost = 15000  # $15K potential damage
+            explanation_parts.append("✅ LEGITIMATE SESSION CONFIRMED")
+        
+        if not ml_anomaly_flag:
+            explanation_parts.append("🤖 ML MODEL: Session patterns within normal range")
+
+    # === STEP 6: BUSINESS IMPACT ASSESSMENT ===
+    if final_anomaly_flag:
+        if behavioral_score.risk_level == 'CRITICAL':
+            business_impact = "🔴 CRITICAL: Immediate security response required"
+            estimated_cost = 50000
+        elif behavioral_score.risk_level == 'HIGH' or composite_confidence >= 0.8:
+            business_impact = "⚠️ HIGH: User account breach - investigate immediately" 
+            estimated_cost = 15000
+        else:
+            business_impact = "🟡 MEDIUM: Potential security incident - monitor closely"
+            estimated_cost = 5000
     else:
-        business_impact = "✅ LOW: Normal operations - continue monitoring"
+        business_impact = "✅ LOW: Normal user behavior detected"
         estimated_cost = 0
 
-    # Log the prediction with enhanced details
-    now = datetime.now(timezone.utc)
-    log_entry = {
-        "timestamp": now.isoformat(),
-        "log_month": now.strftime("%Y-%m"),
-        "anomaly": final_anomaly_flag,
-        "anomaly_score": round(anomaly_score, 4),
-        "explanation": explanation,
-        "profile_used": profile,
-        "user_role": user_role,
-        "confidence": confidence,
-        "business_impact": business_impact,
-        "estimated_cost": estimated_cost,
-        "rule_based_detection": rule_detection['is_attack'],
-        "ml_detection": ml_anomaly_flag,
-        "risk_score": risk_score,
-        "detection_method": "Combined ML + Rules" if (ml_anomaly_flag and rule_detection['is_attack']) else 
-                           "Rule-based" if rule_detection['is_attack'] else 
-                           "ML Model" if ml_anomaly_flag else "Normal"
-    }
-    
-    # Add all feature values to log
-    for col in expected_columns:
-        value = data.get(col, 0)
-        if col == "risk_score":
-            log_entry[col] = risk_score
-        else:
-            log_entry[col] = float(value) if isinstance(value, (int, float)) else 0
-
-    # Save to database with enhanced logging
-    try:
-        ensure_database_logging(log_entry)
+    # === STEP 7: BUILD RESPONSE ===
+    response = {
+        'anomaly': final_anomaly_flag,
+        'risk_score': risk_score + behavioral_risk_score,  # Enhanced risk score
+        'confidence': confidence,
+        'message': "🚨 MASQUERADE ATTACK DETECTED!" if final_anomaly_flag else "✅ Normal user behavior",
+        'explanation': ' | '.join(explanation_parts),
+        'business_impact': business_impact,
+        'estimated_cost': estimated_cost,
         
-        # Also try the original method for compatibility
+        # Detailed analysis breakdown
+        'detection_details': {
+            'method_used': method_used,
+            'ml_model_result': ml_anomaly_flag,
+            'rule_based_result': rule_detection['is_attack'],
+            'behavioral_risk_level': behavioral_score.risk_level,
+            'composite_confidence': composite_confidence,
+            'anomaly_score': anomaly_score,
+            'final_decision': final_anomaly_flag
+        },
+        
+        # Behavioral analysis details
+        'behavioral_analysis': {
+            'profile_used': behavioral_score.profile_used,
+            'deviation_score': behavioral_score.overall_deviation,
+            'individual_deviations': behavioral_score.individual_deviations if hasattr(behavioral_score, 'individual_deviations') else {},
+            'risk_level': behavioral_score.risk_level,
+            'analysis_success': behavioral_analysis_success
+        },
+        
+        # Data sources used
+        'data_sources': {
+            'ml_model': 'Isolation Forest anomaly detection',
+            'behavioral_baselines': 'User profile comparison',
+            'business_rules': 'Security policy enforcement', 
+            'threat_intelligence': 'IP reputation analysis',
+            'authentication_logs': 'Login pattern analysis'
+        }
+    }
+
+    # === STEP 8: LOG TO DATABASE ===
+    try:
         db_path = get_monthly_db_path()
         with sqlite3.connect(db_path) as conn:
-            c = conn.cursor()
-            c.execute('''CREATE TABLE IF NOT EXISTS prediction_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp TEXT,
-                anomaly INTEGER,
-                anomaly_score REAL,
-                explanation TEXT,
-                profile_used TEXT,
-                user_role TEXT,
-                log_month TEXT,
-                network_packet_size REAL,
-                login_attempts INTEGER,
-                session_duration REAL,
-                ip_reputation_score REAL,
-                failed_logins INTEGER,
-                unusual_time_access INTEGER,
-                protocol_type_ICMP INTEGER,
-                protocol_type_TCP INTEGER,
-                protocol_type_UDP INTEGER,
-                encryption_used_AES INTEGER,
-                encryption_used_DES INTEGER,
-                browser_type_Chrome INTEGER,
-                browser_type_Edge INTEGER,
-                browser_type_Firefox INTEGER,
-                browser_type_Safari INTEGER,
-                browser_type_Unknown INTEGER,
-                risk_score REAL
-            )''')
+            cursor = conn.cursor()
             
-            # Create a simplified entry for compatibility
-            simple_entry = {
-                'timestamp': log_entry['timestamp'],
-                'anomaly': log_entry['anomaly'],
-                'anomaly_score': log_entry['anomaly_score'],
-                'explanation': log_entry['explanation'],
-                'profile_used': log_entry['profile_used'],
-                'user_role': log_entry['user_role'],
-                'log_month': log_entry['log_month'],
-                'risk_score': log_entry['risk_score'],
-                'network_packet_size': log_entry['network_packet_size'],
-                'login_attempts': log_entry['login_attempts'],
-                'session_duration': log_entry['session_duration'],
-                'ip_reputation_score': log_entry['ip_reputation_score'],
-                'failed_logins': log_entry['failed_logins'],
-                'unusual_time_access': log_entry['unusual_time_access'],
-                'protocol_type_ICMP': log_entry['protocol_type_ICMP'],
-                'protocol_type_TCP': log_entry['protocol_type_TCP'],
-                'protocol_type_UDP': log_entry['protocol_type_UDP'],
-                'encryption_used_AES': log_entry['encryption_used_AES'],
-                'encryption_used_DES': log_entry['encryption_used_DES'],
-                'browser_type_Chrome': log_entry['browser_type_Chrome'],
-                'browser_type_Edge': log_entry['browser_type_Edge'],
-                'browser_type_Firefox': log_entry['browser_type_Firefox'],
-                'browser_type_Safari': log_entry['browser_type_Safari'],
-                'browser_type_Unknown': log_entry['browser_type_Unknown']
-            }
+            # Create table with enhanced columns (add IF NOT EXISTS to prevent errors)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS predictions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT,
+                    input_data TEXT,
+                    prediction INTEGER,
+                    confidence TEXT,
+                    risk_score REAL,
+                    method_used TEXT,
+                    behavioral_risk TEXT DEFAULT 'UNKNOWN',
+                    profile_used TEXT DEFAULT 'Unknown',
+                    deviation_score REAL DEFAULT 0.0
+                )
+            """)
             
-            columns = ', '.join(simple_entry.keys())
-            placeholders = ', '.join('?' for _ in simple_entry)
-            c.execute(f"INSERT INTO prediction_logs ({columns}) VALUES ({placeholders})", 
-                     tuple(simple_entry.values()))
+            # Insert prediction record
+            cursor.execute("""
+                INSERT INTO predictions 
+                (timestamp, input_data, prediction, confidence, risk_score, method_used, behavioral_risk, profile_used, deviation_score)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                datetime.now(timezone.utc).isoformat(),
+                json.dumps(data),
+                final_anomaly_flag,
+                confidence,  
+                response['risk_score'],
+                method_used,
+                behavioral_score.risk_level,
+                behavioral_score.profile_used,
+                behavioral_score.overall_deviation
+            ))
             conn.commit()
-            print(f"[SUCCESS] Also logged to original DB format")
-            
+            print(f"[SUCCESS] Logged prediction: Anomaly={final_anomaly_flag}, Profile={behavioral_score.profile_used}")
+    
     except Exception as e:
         print(f"[ERROR] Database logging failed: {e}")
-        print(f"[FALLBACK] Prediction result: Anomaly={log_entry['anomaly']}, Risk={log_entry['risk_score']}")
 
-    # Send alert if attack detected
-    if final_anomaly_flag:
+    # === STEP 9: SEND ALERTS ===
+    if final_anomaly_flag and behavioral_score.risk_level in ['HIGH', 'CRITICAL']:
         try:
-            send_telegram_alert(log_entry)
+            alert_message = f"""
+🚨 MASQUERADE ATTACK DETECTED
+
+User: {data.get('username', 'Unknown')}
+Risk Level: {behavioral_score.risk_level}
+Confidence: {confidence}
+Profile: {behavioral_score.profile_used}
+
+Behavioral Analysis:
+{chr(10).join(f"• {exp}" for exp in behavioral_score.explanation)}
+
+IP: {data.get('source_ip', 'Unknown')}
+Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            """
+            
+            send_telegram_alert(alert_message)
         except Exception as e:
-            print(f"[WARNING] Failed to send Telegram alert: {e}")
+            print(f"[WARNING] Alert sending failed: {e}")
 
-    # Debug database after logging
-    debug_database_issue()
+    return jsonify(response)
 
-    # Return enhanced response
+@prediction_bp.route('/behavioral-test', methods=['POST'])
+@require_api_key  
+def test_behavioral_analysis():
+    """Test endpoint for behavioral analysis only"""
+    data = request.get_json(force=True)
+    
+    try:
+        analyzer = BehavioralAnalyzer()
+        result = analyzer.analyze_behavior(data)
+        
+        return jsonify({
+            'success': True,
+            'profile_used': result.profile_used,
+            'deviation_score': result.overall_deviation,
+            'risk_level': result.risk_level,
+            'confidence': result.confidence,
+            'individual_deviations': result.individual_deviations,
+            'explanation': result.explanation
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Behavioral analysis failed'
+        }), 500
+
+@prediction_bp.route('/behavioral-profiles', methods=['GET'])
+@login_required(role='admin')
+def view_behavioral_profiles():
+    """Admin endpoint to view available behavioral profiles"""
     return jsonify({
-        "anomaly": final_anomaly_flag,
-        "message": "🚨 MASQUERADE ATTACK DETECTED!" if final_anomaly_flag else "✅ Legitimate session",
-        "explanation": explanation,
-        "risk_score": risk_score,
-        "confidence": confidence,
-        "business_impact": business_impact,
-        "estimated_cost": estimated_cost,
-        "detection_details": {
-            "ml_model_result": ml_anomaly_flag,
-            "rule_based_result": rule_detection['is_attack'],
-            "final_decision": final_anomaly_flag,
-            "method_used": log_entry['detection_method'],
-            "anomaly_score": round(anomaly_score, 4)
-        },
-        "data_sources": {
-            "threat_intelligence": "IP reputation analysis",
-            "authentication_logs": "Login pattern analysis", 
-            "behavioral_baselines": "User profile comparison",
-            "ml_model": "Isolation Forest anomaly detection",
-            "business_rules": "Security policy enforcement"
-        }
+        'traffic_profiles': list(baseline_stats.get('traffic_profiles', {}).keys()),
+        'role_profiles': list(baseline_stats.get('role_profiles', {}).keys()),
+        'combined_profiles': list(baseline_stats.get('role-traffic', {}).keys()),
+        'profile_details': baseline_stats
     })
 
 @prediction_bp.route('/submit', methods=['GET', 'POST'])
