@@ -8,10 +8,15 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="/dashboard">Dashboard</a>
+          <a class="nav-link" href="/data-feeds">Data Feeds</a>
         </li>
         <li class="nav-item">
+          <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="/dashboard">Dashboard</a>
+        <li class="nav-item">
           <a class="nav-link {% if active_page == 'submit' %}active{% endif %}" href="/submit">Submit Session</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/ml-performance">ML Performance</a>
         </li>
         <li class="nav-item">
           <a class="nav-link {% if active_page == 'report' %}active{% endif %}" href="/report">Static Report</a>
